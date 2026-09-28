@@ -3,6 +3,8 @@ import { api, type Me } from "./api";
 import { navigate, usePath } from "./router";
 import { Home } from "./screens/Home";
 import { Stall } from "./screens/Stall";
+import { Claim } from "./screens/Claim";
+import { Admin } from "./screens/Admin";
 import { Welcome } from "./screens/Welcome";
 
 export function App() {
@@ -14,18 +16,23 @@ export function App() {
   }, [load]);
 
   if (!me) return null;
+  // Welcome keeps the current URL (including /claim?t=...), so the claim resumes after onboarding.
   if (!me.user) return <Welcome onDone={load} />;
+  const role = me.user.role;
 
   return (
     <div className="page">
-      {me.can_switch && (
+      {me.can_switch && path !== "/admin" && (
         <div className="topbar">
-          <span className="muted">{me.user.display_name} · {me.user.role}</span>
+          <span className="muted">{me.user.display_name} · {role}</span>
           <button className="pill" onClick={() => navigate("/admin")}>Switch</button>
         </div>
       )}
-      {me.user.role === "seller" && (path === "/" || path === "/stall") && <Stall />}
-      {me.user.role === "student" && path === "/" && <Home user={me.user} />}
+      {path === "/claim" && <Claim />}
+      {path === "/admin" && me.can_switch && <Admin />}
+      {path !== "/claim" && path !== "/admin" && role === "seller" && <Stall />}
+      {path !== "/claim" && path !== "/admin" && role === "student" && <Home user={me.user} />}
+      {path !== "/claim" && path !== "/admin" && role === "admin" && <Admin />}
     </div>
   );
 }
