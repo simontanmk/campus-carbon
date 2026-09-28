@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, type Me } from "./api";
 import { navigate, usePath } from "./router";
 import { Home } from "./screens/Home";
+import { Stall } from "./screens/Stall";
 import { Welcome } from "./screens/Welcome";
 
 export function App() {
@@ -23,7 +24,8 @@ export function App() {
           <button className="pill" onClick={() => navigate("/admin")}>Switch</button>
         </div>
       )}
-      {path === "/" && <Home user={me.user} />}
+      {me.user.role === "seller" && (path === "/" || path === "/stall") && <Stall />}
+      {me.user.role === "student" && path === "/" && <Home user={me.user} />}
     </div>
   );
 }
