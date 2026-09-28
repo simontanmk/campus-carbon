@@ -4,6 +4,7 @@ import { session } from "./session";
 import { auth } from "./routes/auth";
 import { stall } from "./routes/stall";
 import { claim } from "./routes/claim";
+import { me } from "./routes/me";
 
 export const app = new Hono<AppEnv>().basePath("/api");
 
@@ -12,6 +13,7 @@ app.use("*", session);
 app.route("/", auth);
 app.route("/", stall);
 app.route("/", claim);
+app.route("/", me);
 
 app.notFound((c) => c.json({ error: "not_found", message: "Not found." }, 404));
 app.onError((err, c) => {
