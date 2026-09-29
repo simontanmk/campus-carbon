@@ -7,3 +7,17 @@ export function weekHeadline(w: { meals_week: number; low_carbon_meals_week: num
   const verb = low === 1 || meals === 1 ? "was" : "were";
   return `${low} of your ${meals} ${noun} this week ${verb} low-carbon.`;
 }
+
+export function shortName(name: string): string {
+  const m = /^Economy rice: (.+)$/.exec(name);
+  return m ? `${m[1]} economy rice` : name;
+}
+
+const WORDS = ["", "", "twice", "three times", "four times", "five times", "six times", "seven times", "eight times", "nine times", "ten times"];
+
+export function factHeadline(f: { high: { name: string; kg: number }; low: { name: string; kg: number } }): string {
+  const n = Math.round(f.high.kg / f.low.kg);
+  const ratio = n <= 10 ? WORDS[n] : `${n}×`;
+  const low = shortName(f.low.name);
+  return `${shortName(f.high.name)} has about ${ratio} the footprint of ${low.charAt(0).toLowerCase()}${low.slice(1)}.`;
+}

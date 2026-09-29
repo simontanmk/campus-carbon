@@ -10,6 +10,27 @@ function insert(raw: any, id: string, points: number, created_at: number, extra 
 }
 
 describe("GET /api/me/summary", () => {
+  it("includes the week strip, best swap, the proposal's fact and the lightest low-carbon dish", async () => {
+    const { req, raw } = await setup();
+    const ws = sgWeekStart(Date.now());
+    raw.exec(`INSERT INTO activities (id,user_id,category,type,points,verified,source,stall_id,item_id,low_carbon,kg_co2e,created_at) VALUES
+      ('a','u-alex','food','meal',0,1,'qr','noodles','chicken-rice',0,1.36,${ws + 1000}),
+      ('b','u-alex','food','meal',0,1,'qr','noodles','chicken-rice',0,1.36,${ws - 3 * 86_400_000}),
+      ('c','u-alex','food','meal',20,1,'qr','econ-rice','econ-veg-egg',1,0.65,${ws + 86_400_000 + 1000})`);
+    const b = (await req("/api/me/summary", { as: "u-alex" })).body;
+    expect(b.days).toEqual(["other", "low", "none", "none", "none", "none", "none"]);
+    expect(b.swap).toEqual({ from: "Chicken rice", to: "Vegetarian noodles with tofu", saves_kg: 0.97 });
+    expect(b.fact).toEqual({ high: { name: "Fish soup with rice", kg: 2.03 }, low: { name: "Economy rice: 2 veg + egg", kg: 0.65 } });
+    expect(b.featured).toEqual({ name: "Vegetarian noodles with tofu", stall_name: "Noodles & Rice Plates", kg_co2e: 0.39, points: 20 });
+  });
+
+  it("skips draft items for the featured dish and swap", async () => {
+    const { req, raw } = await setup();
+    raw.exec("UPDATE items SET status='draft' WHERE id='veg-noodles'");
+    const b = (await req("/api/me/summary", { as: "u-bea" })).body;
+    expect(b.featured.name).toBe("Economy rice: 2 veg + egg");
+  });
+
   it("counts this week's meals, low-carbon meals and kg (drinks and last week excluded from meals)", async () => {
     const { req, raw } = await setup();
     const ws = sgWeekStart(Date.now());
@@ -41,7 +62,7 @@ describe("GET /api/me/summary", () => {
 
   it("returns zeros for a new student", async () => {
     const { req } = await setup();
-    expect((await req("/api/me/summary", { as: "u-bea" })).body).toEqual({ points_total: 0, points_week: 0, meals_week: 0, low_carbon_meals_week: 0, kg_week: 0, recent: [] });
+    expect((await req("/api/me/summary", { as: "u-bea" })).body).toMatchObject({ points_total: 0, points_week: 0, meals_week: 0, low_carbon_meals_week: 0, kg_week: 0, recent: [], swap: null, days: ["none", "none", "none", "none", "none", "none", "none"] });
   });
 
   it("is student-only", async () => {

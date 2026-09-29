@@ -1,10 +1,12 @@
 :root {
-  --bg: #fbfaf7;
+  --bg: #f7f6f2;
+  --panel: #ecebe6;
+  --panel-strong: #b9b7b0;
   --card: #ffffff;
   --text: #1c1c1e;
   --text-2: #6e6e73;
   --muted: #8e8e93;
-  --line: #e2e0da;
+  --line: #e0ded7;
   --accent: #2e7d50;
   --accent-soft: #e6f0e9;
   --danger: #c4291c;
@@ -40,8 +42,6 @@ button { font: inherit; color: inherit; }
 
 /* Structure */
 .rule { border: 0; border-top: 0.5px solid var(--line); margin: 0; }
-.stats { display: flex; align-items: center; gap: 20px; padding: 16px 0; border-top: 0.5px solid var(--line); border-bottom: 0.5px solid var(--line); }
-.stats .figures { display: flex; gap: 28px; }
 .section-head { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
 .list { display: flex; flex-direction: column; }
 .row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 14px 0; border-bottom: 0.5px solid var(--line); }
@@ -51,6 +51,19 @@ button { font: inherit; color: inherit; }
 .row .pts { font-family: var(--serif); font-size: 18px; }
 .topbar { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted); }
 .link-btn { appearance: none; background: none; border: 0.5px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 13px; cursor: pointer; }
+
+.panel { background: var(--panel); border-radius: 18px; padding: 16px; }
+.panel .label { color: var(--text-2); }
+.figures { display: flex; gap: 32px; }
+.week { display: flex; justify-content: space-between; padding: 0 4px; }
+.week div { font-size: 11px; color: var(--muted); text-align: center; }
+.week i { display: block; width: 14px; height: 14px; border-radius: 50%; margin: 6px auto 0; border: 1px solid #d6d4cd; }
+.week i.low { background: var(--accent); border-color: var(--accent); }
+.week i.other { background: var(--panel-strong); border-color: var(--panel-strong); }
+.bar { height: 8px; border-radius: 4px; background: var(--panel-strong); }
+.bar.green { background: var(--accent); }
+.bar-row { display: flex; justify-content: space-between; font-size: 14px; margin: 0 0 8px; }
+.card { background: var(--card); border-radius: 18px; padding: 16px; }
 
 /* Controls */
 .btn {
