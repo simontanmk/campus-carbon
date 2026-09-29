@@ -21,3 +21,33 @@ export function factHeadline(f: { high: { name: string; kg: number }; low: { nam
   const low = shortName(f.low.name);
   return `${shortName(f.high.name)} has about ${ratio} the footprint of ${low.charAt(0).toLowerCase()}${low.slice(1)}.`;
 }
+const MODE_LABEL: Record<string, string> = { walk: "Walked", shuttle: "Shuttle", car: "Car or Grab" };
+
+export function activityLabel(a: {
+  type: string;
+  item_name: string | null;
+  detail: Record<string, unknown>;
+  place_names: { from: string; to: string } | null;
+}): string {
+  if (a.item_name) return shortName(a.item_name);
+  if (a.type === "trip") {
+    const mode = MODE_LABEL[String(a.detail.mode)] ?? "Trip";
+    return a.place_names ? `${mode}, ${a.place_names.from} to ${a.place_names.to}` : mode;
+  }
+  if (a.type === "steps") return `${Number(a.detail.steps).toLocaleString("en-SG")} steps`;
+  if (a.type === "container_return") {
+    const n = Number(a.detail.count);
+    return `Returned ${n} container${n === 1 ? "" : "s"}`;
+  }
+  if (a.type === "byo") return "Own cup or container";
+  return a.type === "drink" ? "Drink" : "Meal";
+}
+
+const CAT_LABEL = { food: "Food", mobility: "Mobility", waste: "Waste" } as const;
+
+export function budgetLine(b: { categories: Record<"food" | "mobility" | "waste", { target: number; used: number }> }): string {
+  return (Object.keys(CAT_LABEL) as (keyof typeof CAT_LABEL)[])
+    .filter((k) => b.categories[k].target > 0 || b.categories[k].used > 0)
+    .map((k) => `${CAT_LABEL[k]} ${b.categories[k].used} of ${b.categories[k].target} kg`)
+    .join(" · ");
+}

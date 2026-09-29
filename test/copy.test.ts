@@ -40,3 +40,29 @@ describe("factHeadline", () => {
     expect(factHeadline({ high: { name: "A", kg: 1.36 }, low: { name: "B", kg: 0.65 } })).toBe("A has about twice the footprint of b.");
   });
 });
+import { activityLabel, budgetLine } from "../src/app/copy";
+
+describe("activityLabel", () => {
+  const base = { item_name: null, detail: {}, place_names: null };
+  it("names meals by short dish name", () => {
+    expect(activityLabel({ ...base, type: "meal", item_name: "Economy rice: 2 veg + egg" })).toBe("2 veg + egg economy rice");
+  });
+  it("describes trips with mode and places", () => {
+    expect(activityLabel({ ...base, type: "trip", detail: { mode: "walk" }, place_names: { from: "The Hive", to: "Hall 11" } })).toBe("Walked, The Hive to Hall 11");
+    expect(activityLabel({ ...base, type: "trip", detail: { mode: "shuttle" }, place_names: { from: "A", to: "B" } })).toBe("Shuttle, A to B");
+    expect(activityLabel({ ...base, type: "trip", detail: { mode: "car" }, place_names: { from: "A", to: "B" } })).toBe("Car or Grab, A to B");
+  });
+  it("describes steps and returns", () => {
+    expect(activityLabel({ ...base, type: "steps", detail: { steps: 5200 } })).toBe("5,200 steps");
+    expect(activityLabel({ ...base, type: "container_return", detail: { count: 1 } })).toBe("Returned 1 container");
+    expect(activityLabel({ ...base, type: "container_return", detail: { count: 3 } })).toBe("Returned 3 containers");
+    expect(activityLabel({ ...base, type: "byo" })).toBe("Own cup or container");
+  });
+});
+
+describe("budgetLine", () => {
+  it("lists categories that have a target or usage, food first", () => {
+    expect(budgetLine({ categories: { food: { target: 5.1, used: 1.5 }, mobility: { target: 0.85, used: 0.4 }, waste: { target: 0, used: 0 } } }))
+      .toBe("Food 1.5 of 5.1 kg · Mobility 0.4 of 0.85 kg");
+  });
+});
