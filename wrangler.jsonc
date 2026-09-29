@@ -11,7 +11,7 @@
     {
       "binding": "DB",
       "database_name": "campus-carbon",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "53446c4e-bbc5-4236-b9f1-7c53b8475b75",
       "migrations_dir": "migrations"
     }
   ],
