@@ -24,8 +24,8 @@ export function App() {
     <div className="page">
       {me.can_switch && path !== "/admin" && (
         <div className="topbar">
-          <span className="muted">{me.user.display_name} · {role}</span>
-          <button className="pill" onClick={() => navigate("/admin")}>Switch</button>
+          <span>Viewing as {me.user.display_name} · {role}</span>
+          <button className="link-btn" onClick={() => navigate("/admin")}>Switch</button>
         </div>
       )}
       {path === "/claim" && <Claim />}

@@ -33,26 +33,44 @@ export function Claim() {
 
   if (error) {
     return (
-      <div className="card">
-        <h2>Couldn't claim</h2>
-        <p className="error">{error}</p>
-        <button className="btn btn-secondary" onClick={() => navigate("/")}>Go home</button>
+      <div className="result">
+        <h1 className="title">Couldn't claim</h1>
+        <p className="body">{error}</p>
+        <div style={{ width: "100%", marginTop: 24 }}>
+          <button className="btn btn-secondary" onClick={() => navigate("/")}>Go home</button>
+        </div>
       </div>
     );
   }
-  if (!result) return <p className="muted">Claiming…</p>;
+  if (!result) return <p className="muted result">Claiming…</p>;
 
+  const main = result.activities.find((a) => a.type !== "byo");
   const byo = result.activities.find((a) => a.type === "byo");
+  const parts = [
+    result.low_carbon && main ? `Low-carbon meal +${main.points}` : null,
+    byo ? `Own container +${byo.points}` : null,
+  ].filter(Boolean);
+
   return (
-    <div className="card" style={{ textAlign: "center" }}>
-      <div className="big-number">+{result.points}</div>
-      <p>{result.item_name}</p>
-      <p className="muted">
-        {result.stall_name} · {result.kg_co2e == null ? "—" : `${result.kg_co2e} kg CO₂e`}
-      </p>
-      {result.low_carbon && <p><span className="pill pill-green">Low-carbon meal</span></p>}
-      {byo && <p className="muted">Includes +{byo.points} for bringing your own container</p>}
-      <button className="btn" onClick={() => navigate("/")}>Done</button>
+    <div className="result">
+      <svg className="check" width="92" height="92" viewBox="0 0 92 92" aria-hidden="true">
+        <circle cx="46" cy="46" r="40" fill="none" stroke="var(--accent)" strokeWidth="5" />
+        <path d="M30 47 l11 11 l21 -23" fill="none" stroke="var(--accent)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <div className="num-xl" style={{ marginTop: 8 }}>{result.points > 0 ? `+${result.points}` : "Logged"}</div>
+      <div className="title" style={{ fontSize: 20 }}>{result.item_name}</div>
+      <div className="muted">
+        {result.stall_name}
+        {result.kg_co2e != null && ` · ${result.kg_co2e} kg CO₂e`}
+      </div>
+      {parts.length > 0 && (
+        <div className="muted" style={{ borderTop: "0.5px solid var(--line)", paddingTop: 12, marginTop: 4, color: "var(--text-2)" }}>
+          {parts.join(" · ")}
+        </div>
+      )}
+      <div style={{ width: "100%", marginTop: 28 }}>
+        <button className="btn" onClick={() => navigate("/")}>Done</button>
+      </div>
     </div>
   );
 }

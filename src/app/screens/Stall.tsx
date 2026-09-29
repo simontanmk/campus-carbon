@@ -38,24 +38,30 @@ export function Stall() {
 
   return (
     <>
-      <h1>{data.stall.name}</h1>
-      <p className="muted">{data.stall.canteen} · tap the item sold</p>
-      <div className="card toggle">
-        <span>Customer brought own cup / container</span>
-        <input type="checkbox" checked={byo} onChange={(e) => setByo(e.target.checked)} aria-label="BYO" />
+      <div>
+        <div className="eyebrow">{data.stall.canteen}</div>
+        <h1 className="display" style={{ marginTop: 8 }}>{data.stall.name}</h1>
       </div>
+      <label className="toggle-row">
+        <span>Own cup or container</span>
+        <span className="switch">
+          <input type="checkbox" checked={byo} onChange={(e) => setByo(e.target.checked)} aria-label="Customer brought own cup or container" />
+          <span />
+        </span>
+      </label>
       {error && <p className="error">{error}</p>}
       <div className="grid">
         {data.items.map((i) => (
           <button key={i.id} className="item-btn" onClick={() => sell(i)}>
-            <span>{i.name}</span>
-            <span>
-              {i.low_carbon && <span className="pill pill-green">Low-carbon</span>}{" "}
-              <span className="muted">{i.kg_co2e == null ? "—" : `${i.kg_co2e} kg`}</span>
+            <span>{i.name.replace(/^Economy rice: /, "")}</span>
+            <span className={i.low_carbon ? "tag green" : "tag"}>
+              {i.low_carbon ? "Low-carbon · " : ""}
+              {i.kg_co2e == null ? "kg unknown" : `${i.kg_co2e} kg`}
             </span>
           </button>
         ))}
       </div>
+      <p className="muted" style={{ textAlign: "center" }}>Tap the item sold to show a code</p>
       {active && <QrSheet active={active} byo={byo} onClose={close} onRegenerate={() => sell(active.item)} />}
     </>
   );
@@ -104,21 +110,24 @@ function QrSheet({
   return (
     <div className="sheet-backdrop" onClick={onClose}>
       <div className="sheet glass" onClick={(e) => e.stopPropagation()}>
-        <h2>{active.item.name}{byo ? " + BYO" : ""}</h2>
+        <h2 className="title">{active.item.name}{byo ? " + own container" : ""}</h2>
         {status.state === "claimed" ? (
           <>
-            <div className="big-number">✓</div>
-            <p>Claimed by {status.claimed_by}</p>
+            <svg className="check" width="92" height="92" viewBox="0 0 92 92" aria-hidden="true">
+              <circle cx="46" cy="46" r="40" fill="none" stroke="var(--accent)" strokeWidth="5" />
+              <path d="M30 47 l11 11 l21 -23" fill="none" stroke="var(--accent)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <p className="body" style={{ color: "var(--text)" }}>Claimed by {status.claimed_by}</p>
           </>
         ) : expired ? (
           <>
-            <p className="muted">Code expired</p>
+            <p className="body">This code expired.</p>
             <button className="btn" onClick={onRegenerate}>New code</button>
           </>
         ) : (
           <>
             <img src={active.qr} alt="Claim QR code" />
-            <p className="muted">Scan with your phone camera · {secondsLeft}s</p>
+            <p className="muted">Scan with your phone camera · <span style={{ fontVariantNumeric: "tabular-nums" }}>{secondsLeft}s</span></p>
           </>
         )}
         <button className="btn btn-secondary" onClick={onClose}>Close</button>
