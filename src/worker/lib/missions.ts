@@ -1,4 +1,4 @@
-import { sgDayStart, sgWeekStart } from "./time";
+import { sgDayStart, sgWeekStart } from "./time.ts";
 
 export type Act = { created_at: number; type: string; low_carbon: number | null; points: number; detail: Record<string, unknown> };
 type Metric = "low_carbon_meals" | "steps" | "byo" | "walk_trips" | "all_weekly";

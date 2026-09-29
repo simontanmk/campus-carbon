@@ -1,5 +1,5 @@
-import type { Act } from "./missions";
-import { sgWeekStart } from "./time";
+import type { Act } from "./missions.ts";
+import { sgWeekStart } from "./time.ts";
 
 const DAY = 86_400_000;
 

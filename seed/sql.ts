@@ -1,4 +1,6 @@
 import { computeKg, isLowCarbonMeal, type FactorTable } from "../src/worker/lib/carbon.ts";
+import { BADGES } from "../src/worker/lib/badges.ts";
+import { MISSIONS } from "../src/worker/lib/missions.ts";
 import { DEFAULT_SETTINGS } from "../src/worker/lib/settings.ts";
 import { FACTORS, ITEMS, LOCATIONS, PERSONA_HISTORY, SETTINGS, STALLS, USERS } from "./data.ts";
 import routes from "./routes.json" with { type: "json" };
@@ -57,6 +59,11 @@ export function buildSeedSql(now: number = Date.now()): string {
       ),
     );
   }
+
+  for (const m of MISSIONS) {
+    out.push(upsert("missions", { id: m.id, name: m.name, category: m.category, metric: m.metric, target: m.target, points: m.points, period: m.period }, ["id"], ["name", "category", "metric", "target", "points", "period"]));
+  }
+  for (const b of BADGES) out.push(upsert("badges", { ...b }, ["id"], ["name", "rule"]));
 
   // Persona history, anchored to each persona's own created_at so re-seeding never shifts it.
   const findRoute = (a: string, b: string) =>

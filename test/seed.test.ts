@@ -105,4 +105,16 @@ describe("seed", () => {
       expect(r.placeholder).toBe(0);
     }
   });
+  it("seeds the six missions and five badges", () => {
+    const { raw } = seeded();
+    expect(raw.prepare("SELECT id, points, period FROM missions ORDER BY id").all()).toEqual([
+      { id: "daily-low-meal", points: 20, period: "daily" },
+      { id: "daily-walk", points: 20, period: "daily" },
+      { id: "weekly-all", points: 50, period: "weekly" },
+      { id: "weekly-byo", points: 80, period: "weekly" },
+      { id: "weekly-low-meals", points: 100, period: "weekly" },
+      { id: "weekly-steps", points: 100, period: "weekly" },
+    ]);
+    expect((raw.prepare("SELECT COUNT(*) AS n FROM badges").get() as any).n).toBe(5);
+  });
 });
