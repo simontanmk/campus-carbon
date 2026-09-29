@@ -17,6 +17,23 @@ function insert(raw: any, id: string, points: number, created_at: number, extra 
 }
 
 describe("GET /api/me/summary", () => {
+  it("counts mission bonuses once in this week's and total points", async () => {
+    const { req, raw } = await setup();
+    const at = Date.now() - 1000;
+    const ins = (id: string, type: string, low: string, detail = "{}") =>
+      raw.exec(`INSERT INTO activities (id,user_id,category,type,points,verified,source,low_carbon,detail_json,created_at) VALUES ('${id}','u-dana','food','${type}',0,1,'qr',${low},'${detail}',${at})`);
+    ins("m1", "meal", "1");
+    ins("m2", "meal", "1");
+    ins("m3", "meal", "1");
+    ins("b1", "byo", "NULL");
+    ins("s1", "steps", "NULL", '{"steps":3000}');
+    ins("s2", "steps", "NULL", '{"steps":2500}');
+    const b = (await req("/api/me/summary", { as: "u-dana" })).body;
+    // daily low meal +20; weekly meals +100, steps +100, byo +80, all +50
+    expect(b.points_week).toBe(350);
+    expect(b.points_total).toBe(350);
+  });
+
   it("returns a ready budget for a seeded persona", async () => {
     const { req } = await setup();
     const b = (await req("/api/me/summary", { as: "u-alex" })).body.budget;
@@ -86,8 +103,9 @@ describe("GET /api/me/summary", () => {
     insert(raw, "new", 35, weekStart + 1000, "'econ-veg-egg'");
     const res = await req("/api/me/summary", { as: "u-dana" });
     expect(res.status).toBe(200);
-    expect(res.body.points_total).toBe(55);
-    expect(res.body.points_week).toBe(35);
+    // Each low-carbon meal falls on a different SG day: +20 daily mission each; neither week reaches 2 meals.
+    expect(res.body.points_total).toBe(55 + 40);
+    expect(res.body.points_week).toBe(35 + 20);
     expect(res.body.recent[0]).toMatchObject({ type: "meal", points: 35, item_name: "Economy rice: 2 veg + egg", low_carbon: true, verified: true });
     expect(res.body.recent).toHaveLength(2);
   });

@@ -6,6 +6,7 @@ import { stall } from "./routes/stall";
 import { claim } from "./routes/claim";
 import { me } from "./routes/me";
 import { log } from "./routes/log";
+import { progress } from "./routes/progress";
 
 export const app = new Hono<AppEnv>().basePath("/api");
 
@@ -16,6 +17,7 @@ app.route("/", stall);
 app.route("/", claim);
 app.route("/", me);
 app.route("/", log);
+app.route("/", progress);
 
 app.notFound((c) => c.json({ error: "not_found", message: "Not found." }, 404));
 app.onError((err, c) => {

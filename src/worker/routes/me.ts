@@ -1,7 +1,9 @@
 import { Hono } from "hono";
 import type { AppEnv } from "../env";
+import { loadActs } from "../acts";
 import { loadSettings } from "../db";
 import { computeBudget } from "../lib/budget";
+import { missionPoints } from "../lib/missions";
 import { bestSwap, type MenuItem } from "../lib/swap";
 import { sgWeekStart } from "../lib/time";
 import { weekDays } from "../lib/week";
@@ -36,7 +38,7 @@ me.get("/me/summary", requireRole("student"), async (c) => {
     )
     .bind(uid)
     .all<{ type: string; points: number; kg_co2e: number | null; low_carbon: number | null; verified: number; created_at: number; detail_json: string; item_name: string | null; from_name: string | null; to_name: string | null }>();
-  const [weekActs, history, menuRes, settings, createdAt, allActs] = await Promise.all([
+  const [weekActs, history, menuRes, settings, createdAt, allActs, myActs] = await Promise.all([
     db.prepare("SELECT created_at, type, low_carbon FROM activities WHERE user_id = ? AND created_at >= ?").bind(uid, weekStart)
       .all<{ created_at: number; type: string; low_carbon: number | null }>(),
     db.prepare("SELECT item_id FROM activities WHERE user_id = ? AND type = 'meal' AND item_id IS NOT NULL").bind(uid)
@@ -47,6 +49,7 @@ me.get("/me/summary", requireRole("student"), async (c) => {
     db.prepare("SELECT created_at FROM users WHERE id = ?").bind(uid).first<number>("created_at"),
     db.prepare("SELECT created_at, category, kg_co2e FROM activities WHERE user_id = ?").bind(uid)
       .all<{ created_at: number; category: "food" | "mobility" | "waste"; kg_co2e: number | null }>(),
+    loadActs(db, { userId: uid }),
   ]);
   const menu = menuRes.results;
   const find = (id: string) => menu.find((m) => m.id === id);
@@ -66,8 +69,8 @@ me.get("/me/summary", requireRole("student"), async (c) => {
     featured: lightest
       ? { name: lightest.name, stall_name: lightest.stall_name, kg_co2e: lightest.kg_co2e, points: settings.points_meal_low_carbon }
       : null,
-    points_total: totals?.total ?? 0,
-    points_week: totals?.week ?? 0,
+    points_total: (totals?.total ?? 0) + missionPoints(myActs, 0, Date.now() + 1),
+    points_week: (totals?.week ?? 0) + missionPoints(myActs, weekStart, Date.now() + 1),
     meals_week: totals?.meals_week ?? 0,
     low_carbon_meals_week: totals?.low_week ?? 0,
     kg_week: Math.round((totals?.kg_week ?? 0) * 100) / 100,
