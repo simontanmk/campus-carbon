@@ -51,3 +51,8 @@ export function budgetLine(b: { categories: Record<"food" | "mobility" | "waste"
     .map((k) => `${CAT_LABEL[k]} ${b.categories[k].used} of ${b.categories[k].target} kg`)
     .join(" · ");
 }
+export function ordinal(n: number): string {
+  const t = n % 100;
+  if (t >= 11 && t <= 13) return `${n}th`;
+  return `${n}${({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th"}`;
+}

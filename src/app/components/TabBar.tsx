@@ -3,6 +3,8 @@ import { navigate } from "../router";
 const TABS = [
   { path: "/", label: "Today" },
   { path: "/log", label: "Log" },
+  { path: "/missions", label: "Missions" },
+  { path: "/ranks", label: "Ranks" },
 ];
 
 export function TabBar({ path }: { path: string }) {

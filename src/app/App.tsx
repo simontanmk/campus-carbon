@@ -7,6 +7,8 @@ import { Claim } from "./screens/Claim";
 import { Admin } from "./screens/Admin";
 import { Welcome } from "./screens/Welcome";
 import { Log } from "./screens/Log";
+import { Missions } from "./screens/Missions";
+import { Ranks } from "./screens/Ranks";
 import { TabBar } from "./components/TabBar";
 
 export function App() {
@@ -36,7 +38,9 @@ export function App() {
       {path === "/admin" && me.can_switch && <Admin />}
       {main && role === "seller" && <Stall />}
       {main && student && path === "/log" && <Log />}
-      {main && student && path !== "/log" && <Home user={me.user} />}
+      {main && student && path === "/missions" && <Missions />}
+      {main && student && path === "/ranks" && <Ranks />}
+      {main && student && !["/log", "/missions", "/ranks"].includes(path) && <Home user={me.user} />}
       {main && role === "admin" && <Admin />}
       {student && main && <TabBar path={path} />}
     </div>

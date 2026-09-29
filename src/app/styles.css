@@ -161,3 +161,22 @@ select {
 .toast { background: var(--accent-soft); color: var(--accent); border-radius: 14px; padding: 12px 14px; font-size: 14px; }
 .section { display: flex; flex-direction: column; gap: 12px; padding-top: 8px; }
 .option:disabled { opacity: 0.5; }
+.tabbar button { padding: 10px 16px; }
+.mission { padding: 12px 0; border-bottom: 0.5px solid #dcdad3; }
+.mission:last-child { border-bottom: 0; }
+.mission .top { display: flex; justify-content: space-between; gap: 12px; font-size: 15px; }
+.mission .reward { font-family: var(--serif); color: var(--text-2); }
+.mission.done .reward { color: var(--accent); }
+.progress { height: 5px; border-radius: 3px; background: #dcdad3; margin-top: 8px; overflow: hidden; }
+.progress i { display: block; height: 100%; background: var(--accent); border-radius: 3px; transition: width 500ms ease; }
+.badges { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.badge { background: var(--card); border-radius: 16px; padding: 14px; }
+.badge.locked { background: transparent; border: 0.5px dashed var(--line); }
+.badge .name { font-family: var(--serif); font-size: 17px; }
+.badge.locked .name { color: var(--muted); }
+.badge .badge-rule { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+.rank-row { display: flex; align-items: baseline; gap: 14px; padding: 14px 12px; border-bottom: 0.5px solid var(--line); }
+.rank-row .pos { font-family: var(--serif); font-size: 18px; width: 28px; color: var(--muted); }
+.rank-row .who { flex: 1; font-size: 16px; }
+.rank-row .pts { font-family: var(--serif); font-size: 18px; }
+.rank-row.me { background: var(--panel); border-radius: 14px; border-bottom-color: transparent; }
