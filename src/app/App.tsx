@@ -6,6 +6,8 @@ import { Stall } from "./screens/Stall";
 import { Claim } from "./screens/Claim";
 import { Admin } from "./screens/Admin";
 import { Welcome } from "./screens/Welcome";
+import { Log } from "./screens/Log";
+import { TabBar } from "./components/TabBar";
 
 export function App() {
   const path = usePath();
@@ -20,8 +22,10 @@ export function App() {
   if (!me.user) return <Welcome onDone={load} />;
   const role = me.user.role;
 
+  const student = role === "student";
+  const main = path !== "/claim" && path !== "/admin";
   return (
-    <div className="page">
+    <div className={student && main ? "page has-tabs" : "page"}>
       {me.can_switch && path !== "/admin" && (
         <div className="topbar">
           <span>Viewing as {me.user.display_name} · {role}</span>
@@ -30,9 +34,11 @@ export function App() {
       )}
       {path === "/claim" && <Claim />}
       {path === "/admin" && me.can_switch && <Admin />}
-      {path !== "/claim" && path !== "/admin" && role === "seller" && <Stall />}
-      {path !== "/claim" && path !== "/admin" && role === "student" && <Home user={me.user} />}
-      {path !== "/claim" && path !== "/admin" && role === "admin" && <Admin />}
+      {main && role === "seller" && <Stall />}
+      {main && student && path === "/log" && <Log />}
+      {main && student && path !== "/log" && <Home user={me.user} />}
+      {main && role === "admin" && <Admin />}
+      {student && main && <TabBar path={path} />}
     </div>
   );
 }

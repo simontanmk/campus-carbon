@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type User } from "../api";
-import { factHeadline, shortName, weekHeadline } from "../copy";
+import { activityLabel, budgetLine, factHeadline, shortName, weekHeadline } from "../copy";
 
 type Summary = {
   points_total: number;
@@ -12,10 +12,13 @@ type Summary = {
   swap: { from: string; to: string; saves_kg: number } | null;
   fact: { high: { name: string; kg: number }; low: { name: string; kg: number } } | null;
   featured: { name: string; stall_name: string; kg_co2e: number; points: number } | null;
-  recent: { type: string; points: number; kg_co2e: number | null; low_carbon: boolean | null; verified: boolean; item_name: string | null; created_at: number }[];
+  recent: { type: string; points: number; kg_co2e: number | null; low_carbon: boolean | null; verified: boolean; item_name: string | null; created_at: number; detail: Record<string, unknown>; place_names: { from: string; to: string } | null }[];
+  budget:
+    | { ready: false; reason: "first_week" | "no_baseline"; ready_at: number }
+    | { ready: true; overall: Line; categories: Record<"food" | "mobility" | "waste", Line>; biggest: "food" | "mobility" | "waste" | null };
 };
+type Line = { target: number; used: number; remaining: number; last_week: number };
 
-const LABEL: Record<string, string> = { meal: "Meal", drink: "Drink", byo: "Own cup or container" };
 const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
 const today = new Intl.DateTimeFormat("en-SG", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Singapore" });
 
@@ -51,11 +54,28 @@ export function Home({ user }: { user: User }) {
           <div className="num">{data.points_week}</div>
           <div className="label">points this week</div>
         </div>
-        <div>
-          <div className="num">{data.kg_week}</div>
-          <div className="label">kg CO₂e logged</div>
-        </div>
+        {data.budget.ready ? (
+          <div>
+            <div className="num" style={data.budget.overall.remaining < 0 ? { color: "var(--danger)" } : undefined}>
+              {data.budget.overall.remaining}
+            </div>
+            <div className="label">kg left of budget</div>
+          </div>
+        ) : (
+          <div>
+            <div className="num">{data.kg_week}</div>
+            <div className="label">kg CO₂e logged</div>
+          </div>
+        )}
       </div>
+
+      {data.budget.ready ? (
+        <p className="muted" style={{ marginTop: -8 }}>{budgetLine(data.budget)}</p>
+      ) : data.budget.reason === "first_week" ? (
+        <p className="muted" style={{ marginTop: -8 }}>
+          Your budget starts {new Date(data.budget.ready_at).toLocaleDateString("en-SG", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Singapore" })}, based on your first week.
+        </p>
+      ) : null}
 
       {data.swap && (
         <p className="body" style={{ fontSize: 14 }}>
@@ -66,7 +86,7 @@ export function Home({ user }: { user: User }) {
       <div className="list" style={{ borderTop: "0.5px solid var(--line)" }}>
         {data.recent.slice(0, 3).map((a, i) => (
           <div className="row" key={i}>
-            <span className="what">{a.item_name ? shortName(a.item_name) : LABEL[a.type] ?? a.type}</span>
+            <span className="what">{activityLabel(a)}</span>
             <span className={a.points > 0 ? "pts green" : "pts"} style={a.points > 0 ? undefined : { color: "var(--muted)" }}>
               {a.points > 0 ? `+${a.points}` : "0"}
             </span>
