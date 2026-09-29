@@ -92,4 +92,17 @@ describe("seed", () => {
     raw.exec(buildSeedSql().replaceAll("'Demo Canteen'", "'Demo''s Canteen'"));
     expect((raw.prepare("SELECT canteen FROM stalls WHERE id='drinks'").get() as any).canteen).toBe("Demo's Canteen");
   });
+  it("seeds a walking route for every pair of locations", () => {
+    const { raw } = seeded();
+    const rows = raw.prepare("SELECT from_id, to_id, distance_km, walk_min, car_min, shuttle_min, placeholder FROM routes").all() as any[];
+    expect(rows).toHaveLength(15);
+    for (const r of rows) {
+      expect(r.from_id < r.to_id).toBe(true);
+      expect(r.distance_km).toBeGreaterThan(0.1);
+      expect(r.distance_km).toBeLessThan(5);
+      expect(r.walk_min).toBeGreaterThan(r.car_min);
+      expect(r.shuttle_min).toBeGreaterThanOrEqual(r.car_min + 5 - 0.05);
+      expect(r.placeholder).toBe(0);
+    }
+  });
 });
