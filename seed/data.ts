@@ -16,8 +16,8 @@ export const FACTORS: { key: string; kg_per_unit: number | null; unit: "kg" | "p
   { key: "coffee", kg_per_unit: 28.53, unit: "kg", source: OWID, note: "TODO confirm on OWID grapher" },
   { key: "cane_sugar", kg_per_unit: 3.2, unit: "kg", source: OWID, note: null },
   { key: "veg", kg_per_unit: 0.43, unit: "kg", source: OWID, note: "root vegetables, proxy for all vegetables" },
-  { key: "shuttle", kg_per_unit: null, unit: "pkm", source: "pending", note: "find sourced per-passenger-km factor; check if NTU shuttle is electric" },
-  { key: "car", kg_per_unit: null, unit: "pkm", source: "pending", note: "find sourced per-passenger-km factor" },
+  { key: "shuttle", kg_per_unit: 0.0965, unit: "pkm", source: "UK DESNZ (2022) via Our World in Data: Bus (average)", note: "proxy; NTU shuttle fleet is being electrified, so the true value is lower" },
+  { key: "car", kg_per_unit: 0.1705, unit: "pkm", source: "UK DESNZ (2022) via Our World in Data: Petrol car", note: "per km, single occupant; also used for Grab" },
 ];
 
 export const STALLS = [
@@ -63,3 +63,73 @@ export const USERS = [
 ] as const;
 
 export const SETTINGS = DEFAULT_SETTINGS;
+
+/**
+ * Coordinates from OpenStreetMap Nominatim, 2026-09-29.
+ * Lee Wee Nam Library was dropped: its OSM footpaths are disconnected, so OSRM
+ * returned 1.4 km for a 140 m walk to North Spine.
+ */
+export const LOCATIONS = [
+  { id: "hive", name: "The Hive", lat: 1.3432338, lon: 103.6827372 },
+  { id: "north-spine", name: "North Spine", lat: 1.3464737, lon: 103.680889 },
+  { id: "south-spine", name: "South Spine", lat: 1.3432754, lon: 103.6812359 },
+  { id: "hall-11", name: "Hall 11", lat: 1.3544176, lon: 103.6869773 },
+  { id: "src", name: "Sports and Recreation Centre", lat: 1.3485623, lon: 103.6888668 },
+  { id: "canteen-2", name: "Canteen 2", lat: 1.3483769, lon: 103.6854467 },
+] as const;
+
+/**
+ * Demo history. day = days after the persona's created_at (0–13), hour = SGT-ish hour offset.
+ * Days 0–6 form the budget baseline; days 7–13 are "last week" for the demo.
+ * kind "meal"/"drink" reference seeded items; "trip" uses a route and mode.
+ */
+export type HistoryEntry =
+  | { day: number; hour: number; kind: "meal" | "drink"; item: string; byo?: boolean }
+  | { day: number; hour: number; kind: "trip"; from: string; to: string; mode: "walk" | "shuttle" | "car" };
+
+const meatHeavy: HistoryEntry[] = [
+  { day: 0, hour: 12, kind: "meal", item: "chicken-rice" },
+  { day: 1, hour: 12, kind: "meal", item: "fish-soup" },
+  { day: 1, hour: 9, kind: "trip", from: "hall-11", to: "north-spine", mode: "car" },
+  { day: 2, hour: 12, kind: "meal", item: "econ-pork" },
+  { day: 3, hour: 12, kind: "meal", item: "chicken-rice" },
+  { day: 3, hour: 9, kind: "trip", from: "hall-11", to: "south-spine", mode: "car" },
+  { day: 4, hour: 12, kind: "meal", item: "beef-hor-fun" },
+  { day: 5, hour: 12, kind: "meal", item: "econ-chicken" },
+  { day: 8, hour: 12, kind: "meal", item: "chicken-rice" },
+  { day: 8, hour: 9, kind: "trip", from: "hall-11", to: "north-spine", mode: "shuttle" },
+  { day: 9, hour: 12, kind: "meal", item: "econ-veg-egg" },
+  { day: 10, hour: 12, kind: "meal", item: "fish-soup" },
+  { day: 11, hour: 9, kind: "trip", from: "hall-11", to: "hive", mode: "car" },
+  { day: 12, hour: 12, kind: "meal", item: "wanton-mee" },
+];
+const mixed: HistoryEntry[] = [
+  { day: 0, hour: 12, kind: "meal", item: "econ-veg-tofu" },
+  { day: 1, hour: 12, kind: "meal", item: "chicken-rice" },
+  { day: 1, hour: 9, kind: "trip", from: "canteen-2", to: "north-spine", mode: "shuttle" },
+  { day: 2, hour: 12, kind: "meal", item: "veg-noodles", byo: true },
+  { day: 3, hour: 10, kind: "drink", item: "kopi" },
+  { day: 4, hour: 12, kind: "meal", item: "econ-fish" },
+  { day: 8, hour: 12, kind: "meal", item: "econ-veg-egg" },
+  { day: 9, hour: 9, kind: "trip", from: "canteen-2", to: "src", mode: "walk" },
+  { day: 10, hour: 12, kind: "meal", item: "wanton-mee" },
+  { day: 11, hour: 12, kind: "meal", item: "veg-noodles", byo: true },
+];
+const lowCarbon: HistoryEntry[] = [
+  { day: 0, hour: 12, kind: "meal", item: "veg-noodles", byo: true },
+  { day: 1, hour: 12, kind: "meal", item: "econ-veg-egg" },
+  { day: 1, hour: 9, kind: "trip", from: "hive", to: "north-spine", mode: "walk" },
+  { day: 2, hour: 12, kind: "meal", item: "econ-veg-tofu" },
+  { day: 3, hour: 10, kind: "drink", item: "kopi-o-kosong" },
+  { day: 4, hour: 12, kind: "meal", item: "veg-noodles" },
+  { day: 8, hour: 12, kind: "meal", item: "econ-veg-egg", byo: true },
+  { day: 9, hour: 9, kind: "trip", from: "hive", to: "south-spine", mode: "walk" },
+  { day: 10, hour: 12, kind: "meal", item: "veg-noodles" },
+  { day: 11, hour: 12, kind: "meal", item: "econ-chicken" },
+];
+
+export const PERSONA_HISTORY: Record<string, HistoryEntry[]> = {
+  "u-alex": meatHeavy,
+  "u-bea": mixed,
+  "u-chen": lowCarbon,
+};

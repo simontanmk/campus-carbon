@@ -18,7 +18,7 @@ describe("POST /api/claim — success", () => {
       { type: "meal", points: 20, kg_co2e: 0.65 },
       { type: "byo", points: 15, kg_co2e: null },
     ]);
-    const acts = ctx.raw.prepare("SELECT category, type, verified, source, token_id, low_carbon FROM activities WHERE user_id='u-alex' ORDER BY type DESC").all();
+    const acts = ctx.raw.prepare("SELECT category, type, verified, source, token_id, low_carbon FROM activities WHERE user_id='u-alex' AND token_id IS NOT NULL ORDER BY type DESC").all();
     expect(acts).toEqual([
       { category: "food", type: "meal", verified: 1, source: "qr", token_id: t.id, low_carbon: 1 },
       { category: "waste", type: "byo", verified: 1, source: "qr", token_id: t.id, low_carbon: null },
@@ -40,7 +40,7 @@ describe("POST /api/claim — success", () => {
     const res = await ctx.req("/api/claim", { as: "u-alex", body: { t: t.token } });
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ kind: "drink", kg_co2e: null, points: 0 });
-    const row = ctx.raw.prepare("SELECT kg_co2e, low_carbon, type FROM activities WHERE user_id='u-alex'").get();
+    const row = ctx.raw.prepare("SELECT kg_co2e, low_carbon, type FROM activities WHERE user_id='u-alex' AND token_id IS NOT NULL").get();
     expect(row).toEqual({ kg_co2e: null, low_carbon: null, type: "drink" });
   });
 });
@@ -113,7 +113,7 @@ describe("POST /api/claim — rejections", () => {
       ctx.req("/api/claim", { as: "u-bea", body: { t: t.token } }),
     ]);
     expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
-    expect((ctx.raw.prepare("SELECT COUNT(*) AS n FROM activities").get() as any).n).toBe(1);
+    expect((ctx.raw.prepare("SELECT COUNT(*) AS n FROM activities WHERE token_id = ?").get(t.id) as any).n).toBe(1);
   });
 
   it("expired → 410", async () => {

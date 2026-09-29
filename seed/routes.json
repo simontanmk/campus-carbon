@@ -1,0 +1,122 @@
+[
+  {
+    "from_id": "canteen-2",
+    "to_id": "hall-11",
+    "distance_km": 0.86,
+    "walk_min": 11.5,
+    "car_min": 1.8,
+    "shuttle_min": 6.8
+  },
+  {
+    "from_id": "canteen-2",
+    "to_id": "hive",
+    "distance_km": 0.94,
+    "walk_min": 12.5,
+    "car_min": 2.6,
+    "shuttle_min": 7.6
+  },
+  {
+    "from_id": "canteen-2",
+    "to_id": "north-spine",
+    "distance_km": 0.84,
+    "walk_min": 11.2,
+    "car_min": 3.4,
+    "shuttle_min": 8.4
+  },
+  {
+    "from_id": "canteen-2",
+    "to_id": "south-spine",
+    "distance_km": 1.13,
+    "walk_min": 15.1,
+    "car_min": 3.2,
+    "shuttle_min": 8.2
+  },
+  {
+    "from_id": "canteen-2",
+    "to_id": "src",
+    "distance_km": 0.47,
+    "walk_min": 6.3,
+    "car_min": 2.6,
+    "shuttle_min": 7.6
+  },
+  {
+    "from_id": "hall-11",
+    "to_id": "hive",
+    "distance_km": 1.66,
+    "walk_min": 22.2,
+    "car_min": 3,
+    "shuttle_min": 8
+  },
+  {
+    "from_id": "hall-11",
+    "to_id": "north-spine",
+    "distance_km": 1.53,
+    "walk_min": 20.4,
+    "car_min": 3.9,
+    "shuttle_min": 8.9
+  },
+  {
+    "from_id": "hall-11",
+    "to_id": "south-spine",
+    "distance_km": 1.83,
+    "walk_min": 24.4,
+    "car_min": 3.7,
+    "shuttle_min": 8.7
+  },
+  {
+    "from_id": "hall-11",
+    "to_id": "src",
+    "distance_km": 1.09,
+    "walk_min": 14.5,
+    "car_min": 2.2,
+    "shuttle_min": 7.2
+  },
+  {
+    "from_id": "hive",
+    "to_id": "north-spine",
+    "distance_km": 0.67,
+    "walk_min": 9,
+    "car_min": 2.2,
+    "shuttle_min": 7.2
+  },
+  {
+    "from_id": "hive",
+    "to_id": "south-spine",
+    "distance_km": 0.27,
+    "walk_min": 3.7,
+    "car_min": 1.5,
+    "shuttle_min": 6.5
+  },
+  {
+    "from_id": "hive",
+    "to_id": "src",
+    "distance_km": 1.33,
+    "walk_min": 17.7,
+    "car_min": 3,
+    "shuttle_min": 8
+  },
+  {
+    "from_id": "north-spine",
+    "to_id": "south-spine",
+    "distance_km": 0.84,
+    "walk_min": 11.2,
+    "car_min": 2.8,
+    "shuttle_min": 7.8
+  },
+  {
+    "from_id": "north-spine",
+    "to_id": "src",
+    "distance_km": 1.31,
+    "walk_min": 17.5,
+    "car_min": 5,
+    "shuttle_min": 10
+  },
+  {
+    "from_id": "south-spine",
+    "to_id": "src",
+    "distance_km": 1.54,
+    "walk_min": 20.6,
+    "car_min": 3.8,
+    "shuttle_min": 8.8
+  }
+]

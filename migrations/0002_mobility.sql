@@ -1,0 +1,4 @@
+ALTER TABLE locations ADD COLUMN lat REAL;
+ALTER TABLE locations ADD COLUMN lon REAL;
+ALTER TABLE routes ADD COLUMN car_min REAL;
+ALTER TABLE routes ADD COLUMN source TEXT;
