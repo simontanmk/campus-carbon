@@ -11,3 +11,7 @@ export function stallClaimPoints(
 export function byoPoints(s: Settings): number {
   return s.points_byo;
 }
+/** Points actually awarded for a self-reported action given what was already earned today (spec §7). */
+export function capSelfReported(points: number, earnedToday: number, cap: number): number {
+  return Math.max(0, Math.min(points, cap - earnedToday));
+}
