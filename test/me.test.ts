@@ -17,6 +17,31 @@ function insert(raw: any, id: string, points: number, created_at: number, extra 
 }
 
 describe("GET /api/me/summary", () => {
+  it("returns a ready budget for a seeded persona", async () => {
+    const { req } = await setup();
+    const b = (await req("/api/me/summary", { as: "u-alex" })).body.budget;
+    expect(b.ready).toBe(true);
+    expect(b.overall.target).toBeGreaterThan(0);
+    expect(Object.keys(b.categories)).toEqual(["food", "mobility", "waste"]);
+  });
+
+  it("returns a not-ready budget for a brand-new student", async () => {
+    const { req } = await setup();
+    const s = await req("/api/session", { body: { display_name: "New" } });
+    const b = (await req("/api/me/summary", { as: s.body.user.id })).body.budget;
+    expect(b).toMatchObject({ ready: false, reason: "first_week" });
+  });
+
+  it("includes trip details with place names in recent", async () => {
+    const { req } = await setup();
+    const s = await req("/api/session", { body: { display_name: "Walker" } });
+    await req("/api/trips", { as: s.body.user.id, body: { from_id: "hive", to_id: "north-spine", mode: "walk" } });
+    const r = (await req("/api/me/summary", { as: s.body.user.id })).body.recent[0];
+    expect(r.type).toBe("trip");
+    expect(r.detail).toMatchObject({ mode: "walk" });
+    expect(r.place_names).toEqual({ from: "The Hive", to: "North Spine" });
+  });
+
   it("includes the week strip, best swap, the proposal's fact and the lightest low-carbon dish", async () => {
     const { req, raw } = await setup();
     const ws = sgWeekStart(Date.now());

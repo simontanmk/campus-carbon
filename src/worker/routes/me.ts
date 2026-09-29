@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { AppEnv } from "../env";
 import { loadSettings } from "../db";
+import { computeBudget } from "../lib/budget";
 import { bestSwap, type MenuItem } from "../lib/swap";
 import { sgWeekStart } from "../lib/time";
 import { weekDays } from "../lib/week";
@@ -25,13 +26,17 @@ me.get("/me/summary", requireRole("student"), async (c) => {
     .first<{ total: number; week: number; meals_week: number; low_week: number; kg_week: number }>();
   const { results } = await db
     .prepare(
-      `SELECT a.type, a.points, a.kg_co2e, a.low_carbon, a.verified, a.created_at, i.name AS item_name
-       FROM activities a LEFT JOIN items i ON i.id = a.item_id
+      `SELECT a.type, a.points, a.kg_co2e, a.low_carbon, a.verified, a.created_at, a.detail_json, i.name AS item_name,
+              lf.name AS from_name, lt.name AS to_name
+       FROM activities a
+       LEFT JOIN items i ON i.id = a.item_id
+       LEFT JOIN locations lf ON a.type = 'trip' AND lf.id = json_extract(a.detail_json, '$.from_id')
+       LEFT JOIN locations lt ON a.type = 'trip' AND lt.id = json_extract(a.detail_json, '$.to_id')
        WHERE a.user_id = ? ORDER BY a.created_at DESC LIMIT 20`,
     )
     .bind(uid)
-    .all<{ type: string; points: number; kg_co2e: number | null; low_carbon: number | null; verified: number; created_at: number; item_name: string | null }>();
-  const [weekActs, history, menuRes, settings] = await Promise.all([
+    .all<{ type: string; points: number; kg_co2e: number | null; low_carbon: number | null; verified: number; created_at: number; detail_json: string; item_name: string | null; from_name: string | null; to_name: string | null }>();
+  const [weekActs, history, menuRes, settings, createdAt, allActs] = await Promise.all([
     db.prepare("SELECT created_at, type, low_carbon FROM activities WHERE user_id = ? AND created_at >= ?").bind(uid, weekStart)
       .all<{ created_at: number; type: string; low_carbon: number | null }>(),
     db.prepare("SELECT item_id FROM activities WHERE user_id = ? AND type = 'meal' AND item_id IS NOT NULL").bind(uid)
@@ -39,6 +44,9 @@ me.get("/me/summary", requireRole("student"), async (c) => {
     db.prepare("SELECT i.id, i.name, i.stall_id, i.kind, i.kg_co2e, i.low_carbon, s.name AS stall_name FROM items i JOIN stalls s ON s.id = i.stall_id WHERE i.status = 'live' AND s.active = 1")
       .all<MenuItem & { stall_name: string }>(),
     loadSettings(db),
+    db.prepare("SELECT created_at FROM users WHERE id = ?").bind(uid).first<number>("created_at"),
+    db.prepare("SELECT created_at, category, kg_co2e FROM activities WHERE user_id = ?").bind(uid)
+      .all<{ created_at: number; category: "food" | "mobility" | "waste"; kg_co2e: number | null }>(),
   ]);
   const menu = menuRes.results;
   const find = (id: string) => menu.find((m) => m.id === id);
@@ -49,6 +57,7 @@ me.get("/me/summary", requireRole("student"), async (c) => {
     .sort((a, b) => a.kg_co2e! - b.kg_co2e!)[0];
 
   return c.json({
+    budget: computeBudget({ createdAt: createdAt ?? Date.now(), now: Date.now(), acts: allActs.results }),
     days: weekDays(weekActs.results, weekStart),
     swap: bestSwap(history.results.map((h) => h.item_id), menu),
     fact: high && low && high.kg_co2e != null && low.kg_co2e != null
@@ -62,10 +71,12 @@ me.get("/me/summary", requireRole("student"), async (c) => {
     meals_week: totals?.meals_week ?? 0,
     low_carbon_meals_week: totals?.low_week ?? 0,
     kg_week: Math.round((totals?.kg_week ?? 0) * 100) / 100,
-    recent: results.map((r) => ({
+    recent: results.map(({ detail_json, from_name, to_name, ...r }) => ({
       ...r,
       low_carbon: r.low_carbon == null ? null : r.low_carbon === 1,
       verified: r.verified === 1,
+      detail: JSON.parse(detail_json || "{}"),
+      place_names: from_name && to_name ? { from: from_name, to: to_name } : null,
     })),
   });
 });
