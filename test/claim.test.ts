@@ -46,6 +46,17 @@ describe("POST /api/claim — success", () => {
 });
 
 describe("POST /api/claim — rejections", () => {
+  it("a failed activity insert leaves the token unused so the student can rescan", async () => {
+    const ctx = await setup();
+    const t = await makeToken(ctx, "u-seller-econ", "econ-veg-egg");
+    ctx.raw.exec("CREATE TRIGGER boom BEFORE INSERT ON activities BEGIN SELECT RAISE(ABORT, 'boom'); END");
+    const res = await ctx.req("/api/claim", { as: "u-alex", body: { t: t.token } });
+    expect(res.status).toBe(500);
+    expect(ctx.raw.prepare("SELECT used_at, used_by FROM tokens WHERE id=?").get(t.id)).toEqual({ used_at: null, used_by: null });
+    ctx.raw.exec("DROP TRIGGER boom");
+    expect((await ctx.req("/api/claim", { as: "u-alex", body: { t: t.token } })).status).toBe(200);
+  });
+
   it("needs a session and does not burn the token", async () => {
     const ctx = await setup();
     const t = await makeToken(ctx, "u-seller-econ", "econ-veg-egg");

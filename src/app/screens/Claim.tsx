@@ -21,6 +21,10 @@ export function Claim() {
     if (started.current) return; // StrictMode runs effects twice in dev; claim exactly once
     started.current = true;
     const t = new URLSearchParams(location.search).get("t") ?? "";
+    if (!t) {
+      navigate("/"); // Back or refresh after a claim: nothing to claim, no false error
+      return;
+    }
     history.replaceState(null, "", "/claim"); // a refresh must not retry a used token
     api<Result>("/claim", { t })
       .then(setResult)

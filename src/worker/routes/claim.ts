@@ -98,7 +98,13 @@ claim.post("/claim", async (c) => {
     stmts.push(insertActivity(db, { ...base, category: "waste", type: "byo", kg_co2e: null, points: p }));
     activities.push({ type: "byo", points: p, kg_co2e: null });
   }
-  await db.batch(stmts);
+  try {
+    await db.batch(stmts);
+  } catch (err) {
+    // Release the token so the student can rescan instead of hitting "already used".
+    await db.prepare("UPDATE tokens SET used_at = NULL, used_by = NULL WHERE id = ? AND used_by = ?").bind(tok.id, user.id).run();
+    throw err;
+  }
 
   return c.json({
     item_name: tok.item_name,
