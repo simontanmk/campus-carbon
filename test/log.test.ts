@@ -115,6 +115,33 @@ describe("POST /api/trips", () => {
   });
 });
 
+
+describe("robustness", () => {
+  it("two simultaneous logs cannot push the day past the cap", async () => {
+    const ctx = await setup();
+    const uid = await newStudent(ctx);
+    const walk = () => ctx.req("/api/trips", { as: uid, body: { from_id: "hive", to_id: "north-spine", mode: "walk" } });
+    const results = await Promise.all(Array.from({ length: 6 }, walk));
+    expect(results.every((r) => r.status === 201)).toBe(true);
+    const total = (ctx.raw.prepare("SELECT SUM(points) AS n FROM activities WHERE user_id=?").get(uid) as any).n;
+    expect(total).toBe(30);
+  });
+
+  it.each(["null", "[]", "42", '"x"'])("a JSON body of %s is a 400, not a 500", async (raw) => {
+    const ctx = await setup();
+    const { app } = await import("../src/worker/app");
+    const { sign } = await import("../src/worker/lib/token");
+    for (const path of ["/api/trips", "/api/steps", "/api/returns", "/api/claim", "/api/session"]) {
+      const res = await app.request(`https://app.test${path}`, {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie: `uid=${encodeURIComponent(await sign("u-alex", ctx.env.COOKIE_SECRET))}` },
+        body: raw,
+      }, ctx.env);
+      expect(res.status, `${path} with ${raw}`).toBe(400);
+    }
+  });
+});
+
 describe("POST /api/steps", () => {
   it("logs steps with 0 points and no kg", async () => {
     const ctx = await setup();

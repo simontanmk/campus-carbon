@@ -201,6 +201,7 @@ Privacy: images are never stored. The provider receives only images being analys
   - one nudge (§9.2.4)
   - streak and points
   - verified and self-reported labelled separately
+- **Demo build (decided 2026-09-29):** to keep Home uncluttered, it shows remaining budget, per-category usage and a "self-reported" tag on unverified rows. "Change vs last week" and "biggest source" are computed by the API (`budget.categories[*].last_week`, `budget.biggest`) but not shown.
 - **Weeks:** Monday 00:00 to Sunday 23:59, Asia/Singapore.
 - **Demo seeding:** personas are created with back-dated `created_at` and a seeded baseline week, so the budget and deltas show realistic numbers immediately.
 

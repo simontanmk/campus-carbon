@@ -38,14 +38,3 @@ describe("parseSettings", () => {
     expect((out as any).unknown_key).toBeUndefined();
   });
 });
-import { capSelfReported } from "../src/worker/lib/scoring";
-
-describe("capSelfReported (spec §7: 30/day)", () => {
-  it("passes points through under the cap", () => expect(capSelfReported(10, 0, 30)).toBe(10));
-  it("trims to what is left", () => expect(capSelfReported(10, 25, 30)).toBe(5));
-  it("gives 0 at or over the cap", () => {
-    expect(capSelfReported(10, 30, 30)).toBe(0);
-    expect(capSelfReported(10, 45, 30)).toBe(0);
-  });
-  it("never goes negative for 0-point actions", () => expect(capSelfReported(0, 40, 30)).toBe(0));
-});

@@ -7,20 +7,25 @@ function plain(row: unknown): Row | null {
   return row == null ? null : { ...(row as Row) };
 }
 
+// Real D1 answers over the network; yielding here lets concurrent requests interleave like they would live.
+const tick = () => new Promise((r) => setImmediate(r));
+
 function statement(db: DatabaseSync, sql: string, params: unknown[] = []): any {
   return {
     bind: (...p: unknown[]) => statement(db, sql, p),
     first: async (col?: string) => {
+      await tick();
       const row = plain(db.prepare(sql).get(...(params as any[])));
       if (row && col) return row[col];
       return row;
     },
-    all: async () => ({
+    all: async () => (await tick(), {
       results: db.prepare(sql).all(...(params as any[])).map((r) => plain(r)!),
       success: true,
       meta: {},
     }),
     run: async () => {
+      await tick();
       const r = db.prepare(sql).run(...(params as any[]));
       return { success: true, meta: { changes: Number(r.changes), last_row_id: Number(r.lastInsertRowid) } };
     },

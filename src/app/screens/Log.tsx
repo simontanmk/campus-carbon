@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api";
 
 type Place = { id: string; name: string };
@@ -16,6 +16,8 @@ export function Log() {
   const [count, setCount] = useState(1);
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const inFlight = useRef(false); // state lags a fast double-tap; the ref flips synchronously
 
   useEffect(() => {
     api<{ locations: Place[] }>("/locations").then((d) => setPlaces(d.locations)).catch(() => setError("Couldn't load places."));
@@ -30,12 +32,18 @@ export function Log() {
   }, [from, to]);
 
   async function run(fn: () => Promise<string>) {
+    if (inFlight.current) return; // one request at a time: a double-tap must not log twice
+    inFlight.current = true;
+    setBusy(true);
     setError(null);
     setToast(null);
     try {
       setToast(await fn());
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      inFlight.current = false;
+      setBusy(false);
     }
   }
 
@@ -73,6 +81,7 @@ export function Log() {
               <button
                 key={o.mode}
                 className="option"
+                disabled={busy}
                 onClick={() =>
                   run(async () => {
                     const r = await api<{ points: number; capped: boolean }>("/trips", { from_id: from, to_id: to, mode: o.mode });
@@ -99,7 +108,7 @@ export function Log() {
         <input type="text" inputMode="numeric" placeholder="5000" value={steps} onChange={(e) => setSteps(e.target.value.replace(/\D/g, ""))} />
         <button
           className="btn btn-secondary"
-          disabled={steps === ""}
+          disabled={busy || steps === ""}
           onClick={() =>
             run(async () => {
               await api("/steps", { steps: Number(steps) });
@@ -123,6 +132,7 @@ export function Log() {
         </div>
         <button
           className="btn btn-secondary"
+          disabled={busy}
           onClick={() =>
             run(async () => {
               const r = await api<{ points: number; capped: boolean }>("/returns", { count });

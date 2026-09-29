@@ -1,12 +1,12 @@
 import { Hono } from "hono";
 import type { AppEnv, User } from "../env";
-import { fail } from "../http";
+import { fail, readBody } from "../http";
 import { rememberAdmin, requireSwitcher, startSession } from "../session";
 
 export const auth = new Hono<AppEnv>();
 
 auth.post("/session", async (c) => {
-  const body = (await c.req.json().catch(() => ({}))) as { display_name?: unknown };
+  const body = (await readBody(c)) as { display_name?: unknown };
   const name = typeof body.display_name === "string" ? body.display_name.trim() : "";
   if (name.length < 1 || name.length > 30) {
     return fail(c, 400, "invalid_name", "Enter a name between 1 and 30 characters.");
@@ -29,7 +29,7 @@ auth.get("/admin/users", requireSwitcher, async (c) => {
 });
 
 auth.post("/admin/impersonate", requireSwitcher, async (c) => {
-  const body = (await c.req.json().catch(() => ({}))) as { user_id?: unknown };
+  const body = (await readBody(c)) as { user_id?: unknown };
   const target =
     typeof body.user_id === "string"
       ? await c.env.DB.prepare("SELECT id, display_name, role, stall_id FROM users WHERE id = ?")

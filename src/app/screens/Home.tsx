@@ -86,7 +86,10 @@ export function Home({ user }: { user: User }) {
       <div className="list" style={{ borderTop: "0.5px solid var(--line)" }}>
         {data.recent.slice(0, 3).map((a, i) => (
           <div className="row" key={i}>
-            <span className="what">{activityLabel(a)}</span>
+            <span className="what">
+              {activityLabel(a)}
+              {!a.verified && <span className="muted"> · self-reported</span>}
+            </span>
             <span className={a.points > 0 ? "pts green" : "pts"} style={a.points > 0 ? undefined : { color: "var(--muted)" }}>
               {a.points > 0 ? `+${a.points}` : "0"}
             </span>

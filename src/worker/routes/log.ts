@@ -2,9 +2,8 @@ import { Hono } from "hono";
 import { insertActivity } from "../activities";
 import { loadSettings } from "../db";
 import type { AppEnv } from "../env";
-import { fail } from "../http";
+import { fail, readBody } from "../http";
 import { tripOptions, type Mode } from "../lib/mobility";
-import { capSelfReported } from "../lib/scoring";
 import { sgDayStart } from "../lib/time";
 import { requireRole } from "../session";
 
@@ -35,13 +34,29 @@ async function resolveTrip(db: D1Database, fromId: unknown, toId: unknown) {
   return { error: null, from, to, route, factors };
 }
 
-async function selfReportedToday(db: D1Database, uid: string, now: number): Promise<number> {
-  return (
-    (await db
-      .prepare("SELECT COALESCE(SUM(points),0) AS n FROM activities WHERE user_id = ? AND verified = 0 AND created_at >= ?")
-      .bind(uid, sgDayStart(now))
-      .first<number>("n")) ?? 0
-  );
+/**
+ * Inserts a self-reported activity with its points capped against what the student has
+ * already earned today, in one statement, so concurrent requests can't both slip under the cap.
+ * Returns the points actually awarded.
+ */
+async function insertCapped(
+  db: D1Database,
+  a: { user_id: string; category: "mobility" | "waste"; type: "trip" | "container_return"; kg_co2e: number | null; detail: Record<string, unknown> },
+  full: number,
+  cap: number,
+  now: number,
+): Promise<number> {
+  const points = await db
+    .prepare(
+      `INSERT INTO activities (id, user_id, category, type, kg_co2e, points, verified, source, detail_json, created_at)
+       SELECT ?1, ?2, ?3, ?4, ?5,
+              MAX(0, MIN(?6, ?7 - COALESCE((SELECT SUM(points) FROM activities WHERE user_id = ?2 AND verified = 0 AND created_at >= ?8), 0))),
+              0, 'manual', ?9, ?10
+       RETURNING points`,
+    )
+    .bind(crypto.randomUUID(), a.user_id, a.category, a.type, a.kg_co2e, full, cap, sgDayStart(now), JSON.stringify(a.detail), now)
+    .first<number>("points");
+  return points ?? 0;
 }
 
 const isInt = (v: unknown, min: number, max: number): v is number => typeof v === "number" && Number.isInteger(v) && v >= min && v <= max;
@@ -60,25 +75,25 @@ log.get("/trips/options", student, async (c) => {
 
 log.post("/trips", student, async (c) => {
   const db = c.env.DB;
-  const body = (await c.req.json().catch(() => ({}))) as { from_id?: unknown; to_id?: unknown; mode?: unknown };
+  const body = (await readBody(c)) as { from_id?: unknown; to_id?: unknown; mode?: unknown };
   const t = await resolveTrip(db, body.from_id, body.to_id);
   if (t.error) return fail(c, t.error[0], t.error[1], t.error[2]);
   if (!MODES.includes(body.mode as Mode)) return fail(c, 400, "invalid_mode", "Pick walk, shuttle or car.");
   const s = await loadSettings(db);
   const option = tripOptions(t.route, t.factors, s).find((o) => o.mode === body.mode);
   if (!option) return fail(c, 400, "invalid_mode", "That option isn't available for this route.");
-  const uid = c.get("user")!.id;
-  const now = Date.now();
-  const points = capSelfReported(option.points, await selfReportedToday(db, uid, now), s.self_reported_daily_cap);
-  await insertActivity(db, {
-    user_id: uid, category: "mobility", type: "trip", kg_co2e: option.kg_co2e, points, verified: false, source: "manual",
-    detail: { from_id: t.from.id, to_id: t.to.id, mode: option.mode, distance_km: t.route.distance_km }, created_at: now,
-  }).run();
+  const points = await insertCapped(
+    db,
+    { user_id: c.get("user")!.id, category: "mobility", type: "trip", kg_co2e: option.kg_co2e, detail: { from_id: t.from.id, to_id: t.to.id, mode: option.mode, distance_km: t.route.distance_km } },
+    option.points,
+    s.self_reported_daily_cap,
+    Date.now(),
+  );
   return c.json({ points, capped: points < option.points, kg_co2e: option.kg_co2e }, 201);
 });
 
 log.post("/steps", student, async (c) => {
-  const body = (await c.req.json().catch(() => ({}))) as { steps?: unknown };
+  const body = (await readBody(c)) as { steps?: unknown };
   if (!isInt(body.steps, 1, 100_000)) return fail(c, 400, "invalid_steps", "Enter a whole number of steps up to 100,000.");
   await insertActivity(c.env.DB, {
     user_id: c.get("user")!.id, category: "mobility", type: "steps", kg_co2e: null, points: 0, verified: false, source: "manual",
@@ -89,16 +104,16 @@ log.post("/steps", student, async (c) => {
 
 log.post("/returns", student, async (c) => {
   const db = c.env.DB;
-  const body = (await c.req.json().catch(() => ({}))) as { count?: unknown };
+  const body = (await readBody(c)) as { count?: unknown };
   if (!isInt(body.count, 1, 20)) return fail(c, 400, "invalid_count", "Enter between 1 and 20 containers.");
   const s = await loadSettings(db);
-  const uid = c.get("user")!.id;
-  const now = Date.now();
   const full = body.count * s.points_container_return;
-  const points = capSelfReported(full, await selfReportedToday(db, uid, now), s.self_reported_daily_cap);
-  await insertActivity(db, {
-    user_id: uid, category: "waste", type: "container_return", kg_co2e: null, points, verified: false, source: "manual",
-    detail: { count: body.count }, created_at: now,
-  }).run();
+  const points = await insertCapped(
+    db,
+    { user_id: c.get("user")!.id, category: "waste", type: "container_return", kg_co2e: null, detail: { count: body.count } },
+    full,
+    s.self_reported_daily_cap,
+    Date.now(),
+  );
   return c.json({ points, capped: points < full }, 201);
 });

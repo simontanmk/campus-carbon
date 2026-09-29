@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { loadSettings } from "../db";
 import type { AppEnv } from "../env";
-import { fail } from "../http";
+import { fail, readBody } from "../http";
 import { sign } from "../lib/token";
 import { requireRole } from "../session";
 
@@ -30,7 +30,7 @@ stall.get("/stall", seller, async (c) => {
 stall.post("/stall/tokens", seller, async (c) => {
   const db = c.env.DB;
   const user = c.get("user")!;
-  const body = (await c.req.json().catch(() => ({}))) as { item_id?: unknown; byo?: unknown };
+  const body = (await readBody(c)) as { item_id?: unknown; byo?: unknown };
   const item =
     typeof body.item_id === "string"
       ? await db

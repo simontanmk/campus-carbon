@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { insertActivity } from "../activities";
 import { loadSettings } from "../db";
 import type { AppEnv } from "../env";
-import { fail } from "../http";
+import { fail, readBody } from "../http";
 import { byoPoints, stallClaimPoints } from "../lib/scoring";
 import { sgDayStart } from "../lib/time";
 import { verify } from "../lib/token";
@@ -34,7 +34,7 @@ claim.post("/claim", async (c) => {
   if (!user) return fail(c, 401, "no_session", "Enter a display name first.");
   if (user.role !== "student") return fail(c, 403, "not_student", "Seller and admin accounts can't claim points.");
 
-  const body = (await c.req.json().catch(() => ({}))) as { t?: unknown };
+  const body = (await readBody(c)) as { t?: unknown };
   const id = await verify(body.t, c.env.TOKEN_SECRET);
   if (!id) return fail(c, 400, "invalid_token", INVALID);
 
