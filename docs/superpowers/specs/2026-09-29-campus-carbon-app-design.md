@@ -84,7 +84,7 @@ summaries     user_id, week_start, text, created_at
 settings      key, value     -- point values, caps, rate limits
 ```
 
-Computed on read, not stored: streaks, weekly budget, leaderboard, nudges.
+Computed on read, not stored: missions (progress and completion), streaks, badges, weekly budget, leaderboard, nudges. They are all pure functions of `activities`, so a mission can't pay twice and nothing drifts out of sync. `missions` and `badges` hold the definitions (seeded from code). `user_missions` and `user_badges` stay in the schema but aren't used in the demo. Carbon Champion reflects last week's leaderboard.
 
 A null `kg_co2e` (e.g. Teh-O kosong, pending mobility factors) means "not estimable". The UI shows "—" or "factor pending", and budget totals skip it.
 
