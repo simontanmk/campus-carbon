@@ -5,6 +5,7 @@ import { auth } from "./routes/auth";
 import { stall } from "./routes/stall";
 import { claim } from "./routes/claim";
 import { me } from "./routes/me";
+import { ai } from "./routes/ai";
 import { log } from "./routes/log";
 import { progress } from "./routes/progress";
 
@@ -16,6 +17,7 @@ app.route("/", auth);
 app.route("/", stall);
 app.route("/", claim);
 app.route("/", me);
+app.route("/", ai);
 app.route("/", log);
 app.route("/", progress);
 

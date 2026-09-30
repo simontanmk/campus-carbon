@@ -3,10 +3,10 @@ import { sign } from "../../src/worker/lib/token";
 import { buildSeedSql } from "../../seed/sql";
 import { createTestD1 } from "./d1";
 
-export async function setup() {
+export async function setup(overrides: Record<string, unknown> = {}) {
   const { d1, raw } = createTestD1();
   raw.exec(buildSeedSql());
-  const env = { DB: d1, TOKEN_SECRET: "test-token-secret", COOKIE_SECRET: "test-cookie-secret" };
+  const env = { DB: d1, TOKEN_SECRET: "test-token-secret", COOKIE_SECRET: "test-cookie-secret", ...overrides };
 
   async function req(
     path: string,
