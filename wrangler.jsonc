@@ -15,5 +15,11 @@
       "migrations_dir": "migrations"
     }
   ],
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  "vars": {
+    "AI_MODE": "live",
+    "AI_BASE_URL": "https://generativelanguage.googleapis.com/v1beta/openai/",
+    "AI_MODEL": "gemini-flash-lite-latest",
+    "AI_FALLBACK_MODEL": "gemini-3.8-flash"
+  }
 }
