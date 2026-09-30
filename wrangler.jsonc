@@ -16,6 +16,8 @@
     }
   ],
   "observability": { "enabled": true },
+  // Gemini's free API refuses some regions ("User location is not supported"); run next to Singapore.
+  "placement": { "region": "gcp:asia-southeast1" },
   "vars": {
     "AI_MODE": "live",
     "AI_BASE_URL": "https://generativelanguage.googleapis.com/v1beta/openai/",

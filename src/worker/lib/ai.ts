@@ -35,14 +35,18 @@ export async function aiJson<T>(
         }),
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
-      if (!res.ok) continue;
+      if (!res.ok) {
+        console.warn(`ai: ${model} HTTP ${res.status} ${(await res.text().catch(() => "")).slice(0, 160)}`);
+        continue;
+      }
       const body = (await res.json()) as { choices?: { message?: { content?: unknown } }[] };
       const content = body.choices?.[0]?.message?.content;
       if (typeof content !== "string") continue;
       const value = validate(JSON.parse(stripFence(content)));
       if (value !== null) return { value, source: "live" };
-    } catch {
+    } catch (e) {
       // timeout, network error or bad JSON: try the next model
+      console.warn(`ai: ${model} ${e instanceof Error ? e.name : "error"}`);
     }
   }
   return { value: mock(), source: "mock" };

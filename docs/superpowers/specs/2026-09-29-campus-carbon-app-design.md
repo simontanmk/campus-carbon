@@ -170,7 +170,7 @@ Configuration:
 - `AI_BASE_URL`, `AI_MODEL`
 - `AI_API_KEY` (Worker secret)
 
-Configured provider (2026-09-30): Google Gemini via `https://generativelanguage.googleapis.com/v1beta/openai/`. Primary `gemini-flash-lite-latest` (fast, and it answered when the larger Flash models were returning 503 "high demand" on the free tier). Fallback `gemini-3.8-flash`. The 8 s timeout applies per attempt, so the worst case is two attempts, then the mock. Known bias: photo estimates may use cooked rather than dry rice weights, which overstates kg.
+Configured provider (2026-09-30): Google Gemini via `https://generativelanguage.googleapis.com/v1beta/openai/`. Primary `gemini-flash-lite-latest` (fast, and it answered when the larger Flash models were returning 503 "high demand" on the free tier). Fallback `gemini-3.8-flash`. The 8 s timeout applies per attempt, so the worst case is two attempts, then the mock. Known bias: photo estimates may use cooked rather than dry rice weights, which overstates kg. The Worker is pinned near Singapore (`placement.region = "gcp:asia-southeast1"`): without it, some requests ran in Cloudflare data centres where Gemini's free API returns 400 "User location is not supported", and those fell back to the mock.
 
 Any OpenAI-compatible chat-completions provider works. Google Gemini (AI Studio free tier) is the first choice. OpenRouter free models (e.g. Qwen), Groq, Alibaba Model Studio and OpenAI also work. Free tiers may use data for training, which is acceptable only with demo data.
 
