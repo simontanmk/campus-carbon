@@ -26,10 +26,14 @@ const today = new Intl.DateTimeFormat("en-SG", { weekday: "long", day: "numeric"
 export function Home({ user }: { user: User }) {
   const [data, setData] = useState<Summary | null>(null);
   const [failed, setFailed] = useState(false);
+  const [nudge, setNudge] = useState<string | null>(null);
   const load = useCallback(() => {
     api<Summary>("/me/summary").then(setData).catch(() => setFailed(true));
   }, []);
   useEffect(load, [load]);
+  useEffect(() => {
+    api<{ text: string }>("/me/nudge").then((n) => setNudge(n.text)).catch(() => {});
+  }, []);
 
   if (failed) return <p className="error">Couldn't load your week. Reload to try again.</p>;
   if (!data) return null;
@@ -81,11 +85,13 @@ export function Home({ user }: { user: User }) {
 
       <MealPhoto label="Snap a meal" primary onLogged={load} />
 
-      {data.swap && (
+      {nudge ? (
+        <p className="body" style={{ fontSize: 14 }}>{nudge}</p>
+      ) : data.swap ? (
         <p className="body" style={{ fontSize: 14 }}>
           Swap {shortName(data.swap.from).toLowerCase()} for {shortName(data.swap.to).toLowerCase()} to save {data.swap.saves_kg} kg next time.
         </p>
-      )}
+      ) : null}
 
       <div className="list" style={{ borderTop: "0.5px solid var(--line)" }}>
         {data.recent.slice(0, 3).map((a, i) => (

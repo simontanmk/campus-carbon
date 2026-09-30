@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type User } from "../api";
+import { navigate } from "../router";
 
 export function Admin() {
   const [users, setUsers] = useState<User[] | null>(null);
@@ -23,6 +24,7 @@ export function Admin() {
         <div className="eyebrow">Admin</div>
         <h1 className="display" style={{ marginTop: 8 }}>Switch persona</h1>
       </div>
+      <button className="btn btn-secondary" onClick={() => navigate("/admin/menu")}>Import a menu from a photo</button>
       {error && <p className="error">{error}</p>}
       <div className="list">
         {users?.map((u) => (
