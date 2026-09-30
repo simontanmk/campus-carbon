@@ -71,7 +71,7 @@ export function validateMenu(raw: unknown) {
   return items.length ? { items } : null;
 }
 
-export const mockMenu = () => ({
+export const mockMenu = (): { items: { name: string; kind: "meal" | "drink"; parts: Parts }[] } => ({
   items: [
     { name: "Vegetable fried rice with egg", kind: "meal" as const, parts: { rice: 80, veg: 100, eggs: 50 } },
     { name: "Chicken cutlet rice", kind: "meal" as const, parts: { rice: 80, poultry: 100, veg: 30 } },
