@@ -141,3 +141,34 @@ describe("POST /api/meals/photo/confirm", () => {
     expect(res.body.error).toBe("invalid_meal");
   });
 });
+describe("GET /api/me/nudge", () => {
+  it("writes a template nudge from the student's own numbers (mock)", async () => {
+    const ctx = await setup();
+    const uid = await freshStudent(ctx);
+    ctx.raw.exec(`INSERT INTO activities (id,user_id,category,type,points,verified,source,stall_id,item_id,low_carbon,kg_co2e,created_at)
+      VALUES ('n1','${uid}','food','meal',0,1,'qr','noodles','chicken-rice',0,1.36,${Date.now() - 1000})`);
+    const res = await ctx.req("/api/me/nudge", { as: uid });
+    expect(res.status).toBe(200);
+    expect(res.body.source).toBe("mock");
+    expect(res.body.text).toContain("1.36 kg");
+    expect(res.body.text).toContain("0.97 kg");
+  });
+
+  it("sends only computed facts to the model and caches a live nudge for the week", async () => {
+    const env = live('{"text":"A calm, specific sentence."}');
+    const ctx = await setup(env);
+    const uid = await freshStudent(ctx);
+    expect((await ctx.req("/api/me/nudge", { as: uid })).body).toEqual({ text: "A calm, specific sentence.", source: "live" });
+    const sent = JSON.parse((env.AI_FETCH.mock.calls[0] as any)[1].body).messages[1].content;
+    expect(JSON.parse(sent)).toMatchObject({ first_name: "Snap", week_kg: 0 });
+    await ctx.req("/api/me/nudge", { as: uid });
+    expect(env.AI_FETCH).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not cache a mock nudge", async () => {
+    const ctx = await setup();
+    const uid = await freshStudent(ctx);
+    await ctx.req("/api/me/nudge", { as: uid });
+    expect((ctx.raw.prepare("SELECT COUNT(*) AS n FROM summaries").get() as any).n).toBe(0);
+  });
+});

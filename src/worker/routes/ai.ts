@@ -2,12 +2,14 @@ import { Hono } from "hono";
 import type { AppEnv } from "../env";
 import { fail, readBody } from "../http";
 import { aiJson } from "../lib/ai";
-import { cleanParts, MEAL_PROMPT, mockMeal, mockTrip, TRIP_PROMPT, validateMeal, validateTrip } from "../lib/ai-tasks";
+import { cleanParts, MEAL_PROMPT, mockMeal, mockNudge, mockTrip, NUDGE_PROMPT, TRIP_PROMPT, validateMeal, validateNudge, validateTrip } from "../lib/ai-tasks";
 import { requireRole } from "../session";
 import { insertCapped } from "../activities";
 import { loadSettings } from "../db";
 import { computeKg, isLowCarbonMeal, type FactorTable, type Parts } from "../lib/carbon";
 import { decodeImage } from "../image";
+import { weekFacts } from "../facts";
+import { sgWeekStart } from "../lib/time";
 
 export const ai = new Hono<AppEnv>();
 const student = requireRole("student");
@@ -85,4 +87,20 @@ ai.post("/meals/photo/confirm", student, async (c) => {
     throw e;
   }
   return c.json({ points, capped: points < full, ...a }, 201);
+});
+
+ai.get("/me/nudge", student, async (c) => {
+  const db = c.env.DB;
+  const uid = c.get("user")!.id;
+  const now = Date.now();
+  const weekStart = sgWeekStart(now);
+  const cached = await db.prepare("SELECT text FROM summaries WHERE user_id = ? AND week_start = ?").bind(uid, weekStart).first<{ text: string }>();
+  if (cached) return c.json({ text: cached.text, source: "live" });
+  const facts = await weekFacts(db, uid, now);
+  const r = await aiJson(c.env, { instructions: NUDGE_PROMPT, text: JSON.stringify(facts) }, validateNudge, () => mockNudge(facts), c.env.AI_FETCH);
+  if (r.source === "live") {
+    await db.prepare("INSERT INTO summaries (user_id, week_start, text, created_at) VALUES (?, ?, ?, ?) ON CONFLICT(user_id, week_start) DO NOTHING")
+      .bind(uid, weekStart, r.value.text, now).run();
+  }
+  return c.json({ text: r.value.text, source: r.source });
 });
