@@ -1,4 +1,4 @@
-import type { Act } from "./missions.ts";
+import { isVerifiedLowCarbonMeal, type Act } from "./missions.ts";
 import { sgWeekStart } from "./time.ts";
 
 const DAY = 86_400_000;
@@ -35,7 +35,7 @@ export function badgeStates(acts: Act[], championOfWeek: number | null): BadgeSt
   const sorted = [...acts].sort((a, b) => a.created_at - b.created_at);
   const at: Record<string, number | null> = {
     "green-starter": sorted[0]?.created_at ?? null,
-    "low-carbon-foodie": nth(sorted, (a) => a.type === "meal" && a.low_carbon === 1, 10),
+    "low-carbon-foodie": nth(sorted, isVerifiedLowCarbonMeal, 10),
     "campus-walker": walkerAt(sorted),
     "zero-waste-hero": nth(sorted, (a) => a.type === "byo", 10),
     "carbon-champion": championOfWeek == null ? null : championOfWeek + 7 * DAY,

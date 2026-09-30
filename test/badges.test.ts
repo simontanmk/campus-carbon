@@ -5,7 +5,7 @@ import type { Act } from "../src/worker/lib/missions";
 const H = 3_600_000;
 const DAY = 24 * H;
 const MON = Date.UTC(2026, 8, 27, 16, 0);
-const act = (at: number, type: string, extra: Partial<Act> = {}): Act => ({ created_at: at, type, low_carbon: null, points: 0, detail: {}, ...extra });
+const act = (at: number, type: string, extra: Partial<Act> = {}): Act => ({ created_at: at, type, low_carbon: null, points: 0, verified: 1, detail: {}, ...extra });
 const earned = (acts: Act[], champ: number | null = null) =>
   Object.fromEntries(badgeStates(acts, champ).map((b) => [b.id, b.earned_at]));
 
@@ -24,6 +24,11 @@ describe("badgeStates (spec §7)", () => {
     const meals = Array.from({ length: 10 }, (_, i) => act(MON + i * H, "meal", { low_carbon: 1 }));
     expect(earned(meals.slice(0, 9))["low-carbon-foodie"]).toBeNull();
     expect(earned(meals)["low-carbon-foodie"]).toBe(MON + 9 * H);
+  });
+
+  it("Low-Carbon Foodie ignores unverified photo meals", () => {
+    const photos = Array.from({ length: 10 }, (_, i) => act(MON + i * H, "meal", { low_carbon: 1, verified: 0 }));
+    expect(earned(photos)["low-carbon-foodie"]).toBeNull();
   });
 
   it("Zero-Waste Hero at the 10th BYO", () => {

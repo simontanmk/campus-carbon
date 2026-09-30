@@ -109,6 +109,10 @@ All values live in `settings` and can be edited in admin.
 - **Daily cap on self-reported points:** 30. Mission rewards do not count toward it.
 - **Low-carbon rule (meals):** the meal's protein is plant-based or egg only. Implemented on ingredients: a meal is low-carbon if its `parts` contain none of `poultry`, `pork`, `beef_herd`, `beef_dairy`, `fish_farmed`. Drinks are not classified.
 - **Missions.** Weekly: 2 low-carbon meals (+100), 5,000 steps (+100), BYO once (+80), all weekly missions done (+50 bonus). Daily: walk one campus trip (+20), log one low-carbon meal (+20).
+- **Photo meals (decided 2026-09-30):**
+  - The food missions and the Low-Carbon Foodie badge count only stall-verified meals. Self-reported photo meals therefore can't unlock +20/+100 bonuses, and self-reported actions stay a minor share of points.
+  - A photo meal earns +5 only when Gemini (not the offline mock) identified it.
+  - Confirming requires a signed ticket from the analyse step, bound to the student and the photo's hash.
 - **Streak:** consecutive days with at least one logged activity.
 - **Badges:**
   - Green Starter: first activity

@@ -19,8 +19,8 @@ describe("periodPoints", () => {
   const MON = Date.UTC(2026, 8, 27, 16, 0);
   it("adds activity points and mission bonuses inside the range", () => {
     const acts = [
-      { created_at: MON + 1000, type: "meal", low_carbon: 1, points: 20, detail: {} },
-      { created_at: MON - 1000, type: "meal", low_carbon: 1, points: 20, detail: {} },
+      { created_at: MON + 1000, type: "meal", low_carbon: 1, points: 20, verified: 1, detail: {} },
+      { created_at: MON - 1000, type: "meal", low_carbon: 1, points: 20, verified: 1, detail: {} },
     ];
     // this week's meal: +20 activity, +20 daily mission
     expect(periodPoints(acts, MON, MON + 7 * 86_400_000)).toBe(40);

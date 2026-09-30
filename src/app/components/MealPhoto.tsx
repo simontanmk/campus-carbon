@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { api, ApiError } from "../api";
 import { resizeToJpeg } from "../image";
 
-type Estimate = { dish: string; parts: Record<string, number>; kg_co2e: number | null; low_carbon: boolean; points: number; image_hash: string; source: "live" | "mock" };
+type Estimate = { dish: string; parts: Record<string, number>; kg_co2e: number | null; low_carbon: boolean; points: number; image_hash: string; source: "live" | "mock"; ticket: string };
 
 /**
  * Photo of a meal from a stall without a code: camera → AI estimate → confirm.
@@ -69,7 +69,7 @@ export function MealPhoto({ label = "Take a photo", primary = false, onLogged }:
               disabled={busy}
               onClick={() =>
                 run(async () => {
-                  const r = await api<{ points: number; capped: boolean }>("/meals/photo/confirm", { dish: estimate.dish, parts: estimate.parts, image_hash: estimate.image_hash });
+                  const r = await api<{ points: number; capped: boolean }>("/meals/photo/confirm", { dish: estimate.dish, parts: estimate.parts, image_hash: estimate.image_hash, ticket: estimate.ticket });
                   setEstimate(null);
                   onLogged?.();
                   const pts = r.capped ? (r.points > 0 ? `+${r.points}, daily limit reached` : "daily limit reached") : `+${r.points}`;

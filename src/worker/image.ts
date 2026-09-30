@@ -13,7 +13,17 @@ export async function decodeImage(raw: unknown): Promise<{ mime: string; base64:
   } catch {
     return { error: "invalid" };
   }
+  if (!matchesMime(bytes, mime)) return { error: "invalid" };
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
   return { mime, base64, hash };
+}
+
+/** The file's own signature must match its declared type, so a text file labelled image/jpeg is refused. */
+function matchesMime(b: Uint8Array, mime: string): boolean {
+  const starts = (...sig: number[]) => sig.every((v, i) => b[i] === v);
+  if (mime === "image/jpeg") return starts(0xff, 0xd8, 0xff);
+  if (mime === "image/png") return starts(0x89, 0x50, 0x4e, 0x47);
+  if (mime === "image/webp") return starts(0x52, 0x49, 0x46, 0x46) && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50;
+  return false;
 }

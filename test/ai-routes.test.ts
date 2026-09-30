@@ -64,7 +64,7 @@ describe("POST /api/meals/photo", () => {
     const uid = await freshStudent(ctx);
     const res = await ctx.req("/api/meals/photo", { as: uid, body: { image: { mime: "image/png", base64: PNG_1PX } } });
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ dish: "Vegetarian noodles with tofu", kg_co2e: 0.39, low_carbon: true, points: 5, source: "mock" });
+    expect(res.body).toMatchObject({ dish: "Vegetarian noodles with tofu", kg_co2e: 0.39, low_carbon: true, points: 0, source: "mock" });
     expect(res.body.image_hash).toMatch(/^[0-9a-f]{64}$/);
   });
 
@@ -86,6 +86,7 @@ describe("POST /api/meals/photo", () => {
     [{ mime: "image/gif", base64: PNG_1PX }],
     [{ mime: "image/png", base64: "not base64!!" }],
     [{ mime: "image/png", base64: "" }],
+    [{ mime: "image/jpeg", base64: "aGVsbG8gd29ybGQgdGhpcyBpcyB0ZXh0" }],
     [{ mime: "image/png", base64: "A".repeat(2_000_004) }],
     ["just a string"],
     [null],
@@ -98,11 +99,12 @@ describe("POST /api/meals/photo", () => {
 });
 
 describe("POST /api/meals/photo/confirm", () => {
-  it("logs an unverified photo meal, +5 when low-carbon, recomputing kg server-side", async () => {
-    const ctx = await setup();
+  it("logs an unverified photo meal, +5 when AI-identified as low-carbon, recomputing kg server-side", async () => {
+    const ctx = await setup(live('{"dish":"Vegetarian noodles with tofu","parts":{"wheat":100,"veg":100,"tofu":60},"confidence":0.9}'));
     const uid = await freshStudent(ctx);
     const a = (await ctx.req("/api/meals/photo", { as: uid, body: { image: { mime: "image/png", base64: PNG_1PX } } })).body;
-    const res = await ctx.req("/api/meals/photo/confirm", { as: uid, body: { dish: a.dish, parts: a.parts, image_hash: a.image_hash, kg_co2e: 0 } });
+    expect(a.points).toBe(5);
+    const res = await ctx.req("/api/meals/photo/confirm", { as: uid, body: { dish: a.dish, parts: a.parts, image_hash: a.image_hash, ticket: a.ticket, kg_co2e: 0 } });
     expect(res.status).toBe(201);
     expect(res.body).toEqual({ points: 5, capped: false, kg_co2e: 0.39, low_carbon: true });
     const row = ctx.raw.prepare("SELECT category, type, verified, source, low_carbon, kg_co2e, image_hash, detail_json FROM activities WHERE user_id=?").get(uid) as any;
@@ -114,20 +116,44 @@ describe("POST /api/meals/photo/confirm", () => {
     const ctx = await setup();
     const uid = await freshStudent(ctx);
     const a = (await ctx.req("/api/meals/photo", { as: uid, body: { image: { mime: "image/png", base64: PNG_1PX } } })).body;
-    await ctx.req("/api/meals/photo/confirm", { as: uid, body: { dish: a.dish, parts: a.parts, image_hash: a.image_hash } });
+    await ctx.req("/api/meals/photo/confirm", { as: uid, body: { dish: a.dish, parts: a.parts, image_hash: a.image_hash, ticket: a.ticket } });
     const again = await ctx.req("/api/meals/photo", { as: uid, body: { image: { mime: "image/png", base64: PNG_1PX } } });
     expect(again.status).toBe(409);
     expect(again.body.error).toBe("duplicate_photo");
-    const confirmAgain = await ctx.req("/api/meals/photo/confirm", { as: uid, body: { dish: a.dish, parts: a.parts, image_hash: a.image_hash } });
+    const confirmAgain = await ctx.req("/api/meals/photo/confirm", { as: uid, body: { dish: a.dish, parts: a.parts, image_hash: a.image_hash, ticket: a.ticket } });
     expect(confirmAgain.status).toBe(409);
   });
 
   it("respects the daily self-reported cap", async () => {
-    const ctx = await setup();
+    const ctx = await setup(live('{"dish":"Vegetarian noodles with tofu","parts":{"wheat":100,"veg":100,"tofu":60},"confidence":0.9}'));
     const uid = await freshStudent(ctx);
     ctx.raw.exec(`INSERT INTO activities (id,user_id,category,type,points,verified,source,created_at) VALUES ('w','${uid}','mobility','trip',28,0,'manual',${Date.now() - 1000})`);
-    const res = await ctx.req("/api/meals/photo/confirm", { as: uid, body: { dish: "Veg noodles", parts: { wheat: 100, veg: 100, tofu: 60 }, image_hash: "a".repeat(64) } });
+    const a = (await ctx.req("/api/meals/photo", { as: uid, body: { image: { mime: "image/png", base64: PNG_1PX } } })).body;
+    const res = await ctx.req("/api/meals/photo/confirm", { as: uid, body: { dish: a.dish, parts: a.parts, image_hash: a.image_hash, ticket: a.ticket } });
     expect(res.body).toMatchObject({ points: 2, capped: true });
+  });
+
+  it("refuses a confirm without a ticket from the analyse step, or with someone else's", async () => {
+    const ctx = await setup();
+    const uid = await freshStudent(ctx);
+    const body = { dish: "Veg noodles", parts: { wheat: 100, veg: 100, tofu: 60 }, image_hash: "a".repeat(64) };
+    const none = await ctx.req("/api/meals/photo/confirm", { as: uid, body });
+    expect(none.status).toBe(400);
+    expect(none.body.error).toBe("invalid_ticket");
+    const a = (await ctx.req("/api/meals/photo", { as: "u-bea", body: { image: { mime: "image/png", base64: PNG_1PX } } })).body;
+    const stolen = await ctx.req("/api/meals/photo/confirm", { as: uid, body: { ...body, image_hash: a.image_hash, ticket: a.ticket } });
+    expect(stolen.status).toBe(400);
+    expect(stolen.body.error).toBe("invalid_ticket");
+  });
+
+  it("an offline (mock) estimate earns 0 even when it looks low-carbon", async () => {
+    const ctx = await setup();
+    const uid = await freshStudent(ctx);
+    const a = (await ctx.req("/api/meals/photo", { as: uid, body: { image: { mime: "image/png", base64: PNG_1PX } } })).body;
+    expect(a).toMatchObject({ source: "mock", low_carbon: true, points: 0 });
+    const res = await ctx.req("/api/meals/photo/confirm", { as: uid, body: { dish: a.dish, parts: a.parts, image_hash: a.image_hash, ticket: a.ticket } });
+    expect(res.status).toBe(201);
+    expect(res.body.points).toBe(0);
   });
 
   it.each([
@@ -158,11 +184,23 @@ describe("GET /api/me/nudge", () => {
     const env = live('{"text":"A calm, specific sentence."}');
     const ctx = await setup(env);
     const uid = await freshStudent(ctx);
+    ctx.raw.exec(`INSERT INTO activities (id,user_id,category,type,points,verified,source,stall_id,item_id,low_carbon,kg_co2e,created_at)
+      VALUES ('c1','${uid}','food','meal',0,1,'qr','noodles','chicken-rice',0,1.36,${Date.now() - 1000})`);
     expect((await ctx.req("/api/me/nudge", { as: uid })).body).toEqual({ text: "A calm, specific sentence.", source: "live" });
     const sent = JSON.parse((env.AI_FETCH.mock.calls[0] as any)[1].body).messages[1].content;
-    expect(JSON.parse(sent)).toMatchObject({ first_name: "Snap", week_kg: 0 });
+    expect(JSON.parse(sent)).toMatchObject({ first_name: "Snap", week_kg: 1.36, meals_week: 1 });
     await ctx.req("/api/me/nudge", { as: uid });
     expect(env.AI_FETCH).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not cache a live nudge for an empty week", async () => {
+    const env = live('{"text":"Nothing yet this week."}');
+    const ctx = await setup(env);
+    const uid = await freshStudent(ctx);
+    await ctx.req("/api/me/nudge", { as: uid });
+    await ctx.req("/api/me/nudge", { as: uid });
+    expect(env.AI_FETCH).toHaveBeenCalledTimes(2);
+    expect((ctx.raw.prepare("SELECT COUNT(*) AS n FROM summaries").get() as any).n).toBe(0);
   });
 
   it("does not cache a mock nudge", async () => {

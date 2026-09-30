@@ -1,6 +1,9 @@
 import { sgDayStart, sgWeekStart } from "./time.ts";
 
-export type Act = { created_at: number; type: string; low_carbon: number | null; points: number; detail: Record<string, unknown> };
+export type Act = { created_at: number; type: string; low_carbon: number | null; points: number; verified: number; detail: Record<string, unknown> };
+
+/** Food missions and badges count only stall-verified meals, so self-reported photos can't unlock them (spec §3). */
+export const isVerifiedLowCarbonMeal = (a: Act) => a.type === "meal" && a.low_carbon === 1 && a.verified === 1;
 type Metric = "low_carbon_meals" | "steps" | "byo" | "walk_trips" | "all_weekly";
 type Period = "daily" | "weekly";
 export type Mission = { id: string; name: string; category: string; metric: Metric; target: number; points: number; period: Period };
@@ -18,7 +21,7 @@ export const MISSIONS: Mission[] = [
 function metricValue(metric: Metric, acts: Act[]): number {
   switch (metric) {
     case "low_carbon_meals":
-      return acts.filter((a) => a.type === "meal" && a.low_carbon === 1).length;
+      return acts.filter(isVerifiedLowCarbonMeal).length;
     case "steps":
       return acts.reduce((n, a) => (a.type === "steps" ? n + (Number(a.detail.steps) || 0) : n), 0);
     case "byo":

@@ -1,13 +1,13 @@
 import { rank, periodPoints, type Ranked } from "./lib/leaderboard";
 import type { Act } from "./lib/missions";
 
-type Row = { user_id: string; created_at: number; type: string; low_carbon: number | null; points: number; detail_json: string };
+type Row = { user_id: string; created_at: number; type: string; low_carbon: number | null; points: number; verified: number; detail_json: string };
 
 /** Student activity as pure-module input. */
 export async function loadActs(db: D1Database, opts: { userId?: string; from?: number } = {}): Promise<(Act & { user_id: string })[]> {
   const { results } = await db
     .prepare(
-      `SELECT a.user_id, a.created_at, a.type, a.low_carbon, a.points, a.detail_json
+      `SELECT a.user_id, a.created_at, a.type, a.low_carbon, a.points, a.verified, a.detail_json
        FROM activities a JOIN users u ON u.id = a.user_id
        WHERE u.role = 'student' AND (?1 IS NULL OR a.user_id = ?1) AND a.created_at >= ?2`,
     )

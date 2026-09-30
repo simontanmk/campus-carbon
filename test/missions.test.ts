@@ -4,7 +4,7 @@ import { currentMissions, missionPoints, MISSIONS, type Act } from "../src/worke
 const H = 3_600_000;
 const DAY = 24 * H;
 const MON = Date.UTC(2026, 8, 27, 16, 0); // Mon 28 Sep 00:00 SGT
-const act = (at: number, type: string, extra: Partial<Act> = {}): Act => ({ created_at: at, type, low_carbon: null, points: 0, detail: {}, ...extra });
+const act = (at: number, type: string, extra: Partial<Act> = {}): Act => ({ created_at: at, type, low_carbon: null, points: 0, verified: 1, detail: {}, ...extra });
 const lowMeal = (at: number) => act(at, "meal", { low_carbon: 1 });
 
 describe("MISSIONS (spec §7)", () => {
@@ -52,6 +52,16 @@ describe("currentMissions", () => {
   it("does not combine Sunday 23:59 and Monday 00:01 into one week", () => {
     const acts = [lowMeal(MON - 60_000), lowMeal(MON + 60_000)];
     expect(currentMissions(acts, MON + H).weekly.find((s) => s.id === "weekly-low-meals")!.completed).toBe(false);
+  });
+});
+
+describe("self-reported meals and food missions (spec §3: self-reported cannot dominate)", () => {
+  it("photo meals do not count toward the low-carbon meal missions", () => {
+    const acts = [act(MON + H, "meal", { low_carbon: 1, verified: 0 }), act(MON + 2 * H, "meal", { low_carbon: 1, verified: 0 })];
+    const m = currentMissions(acts, MON + 3 * H);
+    expect(m.daily.find((s) => s.id === "daily-low-meal")!.completed).toBe(false);
+    expect(m.weekly.find((s) => s.id === "weekly-low-meals")!.progress).toBe(0);
+    expect(missionPoints(acts, MON, MON + 7 * DAY)).toBe(0);
   });
 });
 

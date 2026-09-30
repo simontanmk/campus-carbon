@@ -8,6 +8,7 @@ import { insertCapped } from "../activities";
 import { loadSettings } from "../db";
 import { computeKg, isLowCarbonMeal, type FactorTable, type Parts } from "../lib/carbon";
 import { decodeImage } from "../image";
+import { sign, verify } from "../lib/token";
 import { weekFacts } from "../facts";
 import { sgWeekStart } from "../lib/time";
 
@@ -57,9 +58,12 @@ ai.post("/meals/photo", student, async (c) => {
   const r = await aiJson(c.env, { instructions: MEAL_PROMPT, text: "What is this meal?", image: { mime: img.mime, base64: img.base64 } }, validateMeal, mockMeal, c.env.AI_FETCH);
   const [factors, s] = await Promise.all([factorTable(db), loadSettings(db)]);
   const a = assess(r.value.parts, factors);
+  // The ticket binds this student, this photo and who answered; confirm can't be called without a real upload,
+  // and an offline (mock) estimate never earns points: spec §7 pays only for AI-identified low-carbon meals.
+  const ticket = await sign(`${c.get("user")!.id}:${img.hash}:${r.source}`, c.env.TOKEN_SECRET);
   return c.json({
     dish: r.value.dish, parts: r.value.parts, confidence: r.value.confidence, ...a,
-    points: a.low_carbon ? s.points_photo_low_carbon : 0, image_hash: img.hash, source: r.source,
+    points: a.low_carbon && r.source === "live" ? s.points_photo_low_carbon : 0, image_hash: img.hash, source: r.source, ticket,
   });
 });
 
@@ -70,16 +74,20 @@ ai.post("/meals/photo/confirm", student, async (c) => {
   const hash = typeof body.image_hash === "string" && /^[0-9a-f]{64}$/.test(body.image_hash) ? body.image_hash : null;
   const partsOk = body.parts && typeof body.parts === "object" && !Array.isArray(body.parts);
   if (dish.length < 1 || dish.length > 80 || !hash || !partsOk) return fail(c, 400, "invalid_meal", "Check the dish name and try again.");
+  const uid = c.get("user")!.id;
+  const ticket = await verify(body.ticket, c.env.TOKEN_SECRET);
+  const source = ticket === `${uid}:${hash}:live` ? "live" : ticket === `${uid}:${hash}:mock` ? "mock" : null;
+  if (!source) return fail(c, 400, "invalid_ticket", "Take the photo again, then log it.");
   if (await hashUsed(db, hash)) return fail(c, 409, "duplicate_photo", "This photo has already been logged.");
   const parts = cleanParts(body.parts);
   const [factors, s] = await Promise.all([factorTable(db), loadSettings(db)]);
   const a = assess(parts, factors);
-  const full = a.low_carbon ? s.points_photo_low_carbon : 0;
+  const full = a.low_carbon && source === "live" ? s.points_photo_low_carbon : 0;
   let points: number;
   try {
     points = await insertCapped(
       db,
-      { user_id: c.get("user")!.id, category: "food", type: "meal", kg_co2e: a.kg_co2e, source: "photo", low_carbon: a.low_carbon, image_hash: hash, detail: { dish, parts } },
+      { user_id: uid, category: "food", type: "meal", kg_co2e: a.kg_co2e, source: "photo", low_carbon: a.low_carbon, image_hash: hash, detail: { dish, parts, ai: source } },
       full, s.self_reported_daily_cap, Date.now(),
     );
   } catch (e) {
@@ -98,7 +106,8 @@ ai.get("/me/nudge", student, async (c) => {
   if (cached) return c.json({ text: cached.text, source: "live" });
   const facts = await weekFacts(db, uid, now);
   const r = await aiJson(c.env, { instructions: NUDGE_PROMPT, text: JSON.stringify(facts) }, validateNudge, () => mockNudge(facts), c.env.AI_FETCH);
-  if (r.source === "live") {
+  // An empty week's sentence would be stale after the first log, so only cache weeks with activity.
+  if (r.source === "live" && (facts.meals_week > 0 || facts.week_kg > 0)) {
     await db.prepare("INSERT INTO summaries (user_id, week_start, text, created_at) VALUES (?, ?, ?, ?) ON CONFLICT(user_id, week_start) DO NOTHING")
       .bind(uid, weekStart, r.value.text, now).run();
   }
