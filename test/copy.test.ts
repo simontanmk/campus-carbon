@@ -74,3 +74,9 @@ describe("ordinal", () => {
     (n, s) => expect(ordinal(n)).toBe(s),
   );
 });
+
+describe("activityLabel for photo meals", () => {
+  it("uses the dish the student confirmed", () => {
+    expect(activityLabel({ type: "meal", item_name: null, detail: { dish: "Vegetarian noodles with tofu" }, place_names: null })).toBe("Vegetarian noodles with tofu");
+  });
+});

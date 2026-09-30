@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { MealPhoto } from "../components/MealPhoto";
 import { api, type User } from "../api";
 import { activityLabel, budgetLine, factHeadline, shortName, weekHeadline } from "../copy";
 
@@ -25,13 +26,14 @@ const today = new Intl.DateTimeFormat("en-SG", { weekday: "long", day: "numeric"
 export function Home({ user }: { user: User }) {
   const [data, setData] = useState<Summary | null>(null);
   const [failed, setFailed] = useState(false);
-  useEffect(() => {
+  const load = useCallback(() => {
     api<Summary>("/me/summary").then(setData).catch(() => setFailed(true));
   }, []);
+  useEffect(load, [load]);
 
   if (failed) return <p className="error">Couldn't load your week. Reload to try again.</p>;
   if (!data) return null;
-  if (data.recent.length === 0) return <FirstVisit user={user} data={data} />;
+  if (data.recent.length === 0) return <FirstVisit user={user} data={data} onLogged={load} />;
 
   return (
     <>
@@ -77,6 +79,8 @@ export function Home({ user }: { user: User }) {
         </p>
       ) : null}
 
+      <MealPhoto label="Snap a meal" primary onLogged={load} />
+
       {data.swap && (
         <p className="body" style={{ fontSize: 14 }}>
           Swap {shortName(data.swap.from).toLowerCase()} for {shortName(data.swap.to).toLowerCase()} to save {data.swap.saves_kg} kg next time.
@@ -100,7 +104,7 @@ export function Home({ user }: { user: User }) {
   );
 }
 
-function FirstVisit({ user, data }: { user: User; data: Summary }) {
+function FirstVisit({ user, data, onLogged }: { user: User; data: Summary; onLogged: () => void }) {
   const { fact, featured } = data;
   return (
     <>
@@ -140,6 +144,9 @@ function FirstVisit({ user, data }: { user: User; data: Summary }) {
       <p className="body" style={{ fontSize: 14 }}>
         Scan the stall's code after you buy. Plant or egg dishes earn points, and bringing your own cup or container earns extra.
       </p>
+
+      <MealPhoto label="Snap a meal" primary onLogged={onLogged} />
+      <p className="muted" style={{ marginTop: -12 }}>For stalls without a code. Photo meals are self-reported.</p>
     </>
   );
 }

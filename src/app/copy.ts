@@ -30,6 +30,7 @@ export function activityLabel(a: {
   place_names: { from: string; to: string } | null;
 }): string {
   if (a.item_name) return shortName(a.item_name);
+  if (typeof a.detail.dish === "string" && a.detail.dish) return shortName(a.detail.dish);
   if (a.type === "trip") {
     const mode = MODE_LABEL[String(a.detail.mode)] ?? "Trip";
     return a.place_names ? `${mode}, ${a.place_names.from} to ${a.place_names.to}` : mode;
