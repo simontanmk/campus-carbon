@@ -1,10 +1,9 @@
 import { Hono } from "hono";
-import { insertActivity } from "../activities";
+import { insertActivity, insertCapped } from "../activities";
 import { loadSettings } from "../db";
 import type { AppEnv } from "../env";
 import { fail, readBody } from "../http";
 import { tripOptions, type Mode } from "../lib/mobility";
-import { sgDayStart } from "../lib/time";
 import { requireRole } from "../session";
 
 export const log = new Hono<AppEnv>();
@@ -32,31 +31,6 @@ async function resolveTrip(db: D1Database, fromId: unknown, toId: unknown) {
   const factors = { shuttle: null as number | null, car: null as number | null };
   for (const r of f.results) factors[r.key as "shuttle" | "car"] = r.kg_per_unit;
   return { error: null, from, to, route, factors };
-}
-
-/**
- * Inserts a self-reported activity with its points capped against what the student has
- * already earned today, in one statement, so concurrent requests can't both slip under the cap.
- * Returns the points actually awarded.
- */
-async function insertCapped(
-  db: D1Database,
-  a: { user_id: string; category: "mobility" | "waste"; type: "trip" | "container_return"; kg_co2e: number | null; detail: Record<string, unknown> },
-  full: number,
-  cap: number,
-  now: number,
-): Promise<number> {
-  const points = await db
-    .prepare(
-      `INSERT INTO activities (id, user_id, category, type, kg_co2e, points, verified, source, detail_json, created_at)
-       SELECT ?1, ?2, ?3, ?4, ?5,
-              MAX(0, MIN(?6, ?7 - COALESCE((SELECT SUM(points) FROM activities WHERE user_id = ?2 AND verified = 0 AND created_at >= ?8), 0))),
-              0, 'manual', ?9, ?10
-       RETURNING points`,
-    )
-    .bind(crypto.randomUUID(), a.user_id, a.category, a.type, a.kg_co2e, full, cap, sgDayStart(now), JSON.stringify(a.detail), now)
-    .first<number>("points");
-  return points ?? 0;
 }
 
 const isInt = (v: unknown, min: number, max: number): v is number => typeof v === "number" && Number.isInteger(v) && v >= min && v <= max;
