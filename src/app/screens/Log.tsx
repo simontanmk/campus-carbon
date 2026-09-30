@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api";
+import { resizeToJpeg } from "../image";
 
 type Place = { id: string; name: string };
 type Option = { mode: "walk" | "shuttle" | "car"; minutes: number; kg_co2e: number | null; points: number };
@@ -18,6 +19,8 @@ export function Log() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const inFlight = useRef(false); // state lags a fast double-tap; the ref flips synchronously
+  const [typed, setTyped] = useState("");
+  const [estimate, setEstimate] = useState<null | { dish: string; parts: Record<string, number>; kg_co2e: number | null; low_carbon: boolean; points: number; image_hash: string; source: "live" | "mock" }>(null);
 
   useEffect(() => {
     api<{ locations: Place[] }>("/locations").then((d) => setPlaces(d.locations)).catch(() => setError("Couldn't load places."));
@@ -53,13 +56,31 @@ export function Log() {
     <>
       <div>
         <div className="eyebrow">Self-reported</div>
-        <h1 className="display" style={{ marginTop: 8 }}>Log a trip, your steps or a return.</h1>
+        <h1 className="display" style={{ marginTop: 8 }}>Log a trip, steps, a return or a meal.</h1>
       </div>
       {toast && <div className="toast" role="status">{toast}</div>}
       {error && <p className="error">{error}</p>}
 
       <div className="section">
         <h2 className="title">Trip</h2>
+        <div className="inline">
+          <input type="text" placeholder="Hive to Hall 11" value={typed} maxLength={200} onChange={(e) => setTyped(e.target.value)} />
+          <button
+            className="btn btn-secondary"
+            disabled={busy || typed.trim() === ""}
+            onClick={() =>
+              run(async () => {
+                const r = await api<{ from_id: string; to_id: string; source: string }>("/trips/parse", { text: typed });
+                setFrom(r.from_id);
+                setTo(r.to_id);
+                setTyped("");
+                return r.source === "mock" ? "Places filled in (offline estimate). Check them below." : "Places filled in. Check them below.";
+              })
+            }
+          >
+            Find
+          </button>
+        </div>
         <div>
           <p className="field-label">From</p>
           <select value={from} onChange={(e) => setFrom(e.target.value)}>
@@ -143,6 +164,57 @@ export function Log() {
         >
           Log returns
         </button>
+      </div>
+      <hr className="rule" />
+      <div className="section">
+        <h2 className="title">Meal at another stall</h2>
+        <p className="body" style={{ fontSize: 14 }}>For stalls without a code. Photo meals are self-reported and earn +5 if plant or egg based.</p>
+        {!estimate ? (
+          <label className="btn btn-secondary file-btn" aria-disabled={busy}>
+            Take a photo
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              disabled={busy}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (!file) return;
+                run(async () => {
+                  const img = await resizeToJpeg(file);
+                  setEstimate(await api("/meals/photo", { image: img }));
+                  return "Check the estimate below.";
+                });
+              }}
+            />
+          </label>
+        ) : (
+          <div className="estimate">
+            <span className="tag">{estimate.source === "mock" ? "Offline estimate" : "AI estimate"} · self-reported</span>
+            <div className="title" style={{ fontSize: 20 }}>{estimate.dish}</div>
+            <div className="muted">
+              {estimate.kg_co2e == null ? "kg unknown" : `${estimate.kg_co2e} kg CO₂e`}
+              {estimate.low_carbon ? " · low-carbon" : ""} · {estimate.points > 0 ? `+${estimate.points}` : "0 points"}
+            </div>
+            <div className="inline">
+              <button className="btn btn-secondary" disabled={busy} onClick={() => setEstimate(null)}>Cancel</button>
+              <button
+                className="btn"
+                disabled={busy}
+                onClick={() =>
+                  run(async () => {
+                    const r = await api<{ points: number; capped: boolean }>("/meals/photo/confirm", { dish: estimate.dish, parts: estimate.parts, image_hash: estimate.image_hash });
+                    setEstimate(null);
+                    return `Meal logged ${pts(r.points, r.capped)}`;
+                  })
+                }
+              >
+                Log meal
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

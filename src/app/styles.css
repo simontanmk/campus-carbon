@@ -180,3 +180,10 @@ select {
 .rank-row .who { flex: 1; font-size: 16px; }
 .rank-row .pts { font-family: var(--serif); font-size: 18px; }
 .rank-row.me { background: var(--panel); border-radius: 14px; border-bottom-color: transparent; }
+.inline { display: flex; gap: 8px; }
+.inline input { flex: 1; }
+.inline .btn { width: auto; padding: 14px 18px; }
+.estimate { background: var(--card); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.estimate .tag { font-size: 12px; color: var(--muted); }
+.file-btn { position: relative; overflow: hidden; }
+.file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
