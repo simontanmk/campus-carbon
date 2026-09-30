@@ -1,0 +1,19 @@
+const MIMES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_BASE64 = 2_000_000; // ~1.5 MB of image; the app resizes to 1024 px JPEG first
+
+/** Validates an uploaded image and returns its bytes' SHA-256. The image itself is never stored. */
+export async function decodeImage(raw: unknown): Promise<{ mime: string; base64: string; hash: string } | { error: string }> {
+  if (!raw || typeof raw !== "object") return { error: "invalid" };
+  const { mime, base64 } = raw as { mime?: unknown; base64?: unknown };
+  if (typeof mime !== "string" || !MIMES.includes(mime)) return { error: "invalid" };
+  if (typeof base64 !== "string" || base64.length === 0 || base64.length > MAX_BASE64 || !/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) return { error: "invalid" };
+  let bytes: Uint8Array;
+  try {
+    bytes = Uint8Array.from(atob(base64), (ch) => ch.charCodeAt(0));
+  } catch {
+    return { error: "invalid" };
+  }
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  return { mime, base64, hash };
+}

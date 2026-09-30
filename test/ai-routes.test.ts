@@ -52,3 +52,92 @@ describe("POST /api/trips/parse", () => {
     expect((await ctx.req("/api/trips/parse", { as: "u-seller-econ", body: { text: "hive to hall 11" } })).status).toBe(403);
   });
 });
+const PNG_1PX = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
+
+async function freshStudent(ctx: Awaited<ReturnType<typeof setup>>) {
+  return (await ctx.req("/api/session", { body: { display_name: "Snap" } })).body.user.id as string;
+}
+
+describe("POST /api/meals/photo", () => {
+  it("returns a mock estimate with kg from factors and a hash", async () => {
+    const ctx = await setup();
+    const uid = await freshStudent(ctx);
+    const res = await ctx.req("/api/meals/photo", { as: uid, body: { image: { mime: "image/png", base64: PNG_1PX } } });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ dish: "Vegetarian noodles with tofu", kg_co2e: 0.39, low_carbon: true, points: 5, source: "mock" });
+    expect(res.body.image_hash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("ignores any carbon numbers the model invents and drops unknown ingredients", async () => {
+    const ctx = await setup(live('{"dish":"Chicken rice","parts":{"rice":80,"poultry":100,"chilli":20},"kg_co2e":0.01,"confidence":0.9}'));
+    const uid = await freshStudent(ctx);
+    const res = await ctx.req("/api/meals/photo", { as: uid, body: { image: { mime: "image/png", base64: PNG_1PX } } });
+    expect(res.body).toMatchObject({ dish: "Chicken rice", parts: { rice: 80, poultry: 100 }, kg_co2e: 1.34, low_carbon: false, points: 0, source: "live" });
+  });
+
+  it("an estimate with no usable parts is not low-carbon and earns 0", async () => {
+    const ctx = await setup(live('{"dish":"Mystery plate","parts":{"chilli":20},"confidence":0.2}'));
+    const uid = await freshStudent(ctx);
+    const res = await ctx.req("/api/meals/photo", { as: uid, body: { image: { mime: "image/png", base64: PNG_1PX } } });
+    expect(res.body).toMatchObject({ kg_co2e: null, low_carbon: false, points: 0 });
+  });
+
+  it.each([
+    [{ mime: "image/gif", base64: PNG_1PX }],
+    [{ mime: "image/png", base64: "not base64!!" }],
+    [{ mime: "image/png", base64: "" }],
+    [{ mime: "image/png", base64: "A".repeat(2_000_004) }],
+    ["just a string"],
+    [null],
+  ])("400 invalid_image for %j", async (image) => {
+    const ctx = await setup();
+    const res = await ctx.req("/api/meals/photo", { as: "u-alex", body: { image } });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("invalid_image");
+  });
+});
+
+describe("POST /api/meals/photo/confirm", () => {
+  it("logs an unverified photo meal, +5 when low-carbon, recomputing kg server-side", async () => {
+    const ctx = await setup();
+    const uid = await freshStudent(ctx);
+    const a = (await ctx.req("/api/meals/photo", { as: uid, body: { image: { mime: "image/png", base64: PNG_1PX } } })).body;
+    const res = await ctx.req("/api/meals/photo/confirm", { as: uid, body: { dish: a.dish, parts: a.parts, image_hash: a.image_hash, kg_co2e: 0 } });
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual({ points: 5, capped: false, kg_co2e: 0.39, low_carbon: true });
+    const row = ctx.raw.prepare("SELECT category, type, verified, source, low_carbon, kg_co2e, image_hash, detail_json FROM activities WHERE user_id=?").get(uid) as any;
+    expect(row).toMatchObject({ category: "food", type: "meal", verified: 0, source: "photo", low_carbon: 1, kg_co2e: 0.39, image_hash: a.image_hash });
+    expect(JSON.parse(row.detail_json)).toMatchObject({ dish: "Vegetarian noodles with tofu" });
+  });
+
+  it("rejects the same photo twice, at analyse and at confirm", async () => {
+    const ctx = await setup();
+    const uid = await freshStudent(ctx);
+    const a = (await ctx.req("/api/meals/photo", { as: uid, body: { image: { mime: "image/png", base64: PNG_1PX } } })).body;
+    await ctx.req("/api/meals/photo/confirm", { as: uid, body: { dish: a.dish, parts: a.parts, image_hash: a.image_hash } });
+    const again = await ctx.req("/api/meals/photo", { as: uid, body: { image: { mime: "image/png", base64: PNG_1PX } } });
+    expect(again.status).toBe(409);
+    expect(again.body.error).toBe("duplicate_photo");
+    const confirmAgain = await ctx.req("/api/meals/photo/confirm", { as: uid, body: { dish: a.dish, parts: a.parts, image_hash: a.image_hash } });
+    expect(confirmAgain.status).toBe(409);
+  });
+
+  it("respects the daily self-reported cap", async () => {
+    const ctx = await setup();
+    const uid = await freshStudent(ctx);
+    ctx.raw.exec(`INSERT INTO activities (id,user_id,category,type,points,verified,source,created_at) VALUES ('w','${uid}','mobility','trip',28,0,'manual',${Date.now() - 1000})`);
+    const res = await ctx.req("/api/meals/photo/confirm", { as: uid, body: { dish: "Veg noodles", parts: { wheat: 100, veg: 100, tofu: 60 }, image_hash: "a".repeat(64) } });
+    expect(res.body).toMatchObject({ points: 2, capped: true });
+  });
+
+  it.each([
+    [{ dish: "", parts: {}, image_hash: "a".repeat(64) }],
+    [{ dish: "Rice", parts: {}, image_hash: "short" }],
+    [{ dish: "Rice", parts: "x", image_hash: "a".repeat(64) }],
+  ])("400 invalid_meal for %j", async (body) => {
+    const ctx = await setup();
+    const res = await ctx.req("/api/meals/photo/confirm", { as: "u-alex", body });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("invalid_meal");
+  });
+});

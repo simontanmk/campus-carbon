@@ -2,8 +2,12 @@ import { Hono } from "hono";
 import type { AppEnv } from "../env";
 import { fail, readBody } from "../http";
 import { aiJson } from "../lib/ai";
-import { mockTrip, TRIP_PROMPT, validateTrip } from "../lib/ai-tasks";
+import { cleanParts, MEAL_PROMPT, mockMeal, mockTrip, TRIP_PROMPT, validateMeal, validateTrip } from "../lib/ai-tasks";
 import { requireRole } from "../session";
+import { insertCapped } from "../activities";
+import { loadSettings } from "../db";
+import { computeKg, isLowCarbonMeal, type FactorTable, type Parts } from "../lib/carbon";
+import { decodeImage } from "../image";
 
 export const ai = new Hono<AppEnv>();
 const student = requireRole("student");
@@ -25,4 +29,60 @@ ai.post("/trips/parse", student, async (c) => {
     return fail(c, 422, "no_match", "Couldn't tell both places. Pick them from the lists instead.");
   }
   return c.json({ from_id, to_id, source: r.source });
+});
+
+async function factorTable(db: D1Database): Promise<FactorTable> {
+  const { results } = await db.prepare("SELECT key, kg_per_unit FROM factors WHERE unit = 'kg'").all<{ key: string; kg_per_unit: number | null }>();
+  return Object.fromEntries(results.map((r) => [r.key, r.kg_per_unit]));
+}
+
+/** kg and low-carbon come only from the factor table and the §7 rule; empty parts never qualify. */
+function assess(parts: Parts, factors: FactorTable) {
+  const kg = Object.keys(parts).length ? computeKg(parts, factors) : null;
+  const low = kg != null && isLowCarbonMeal(parts);
+  return { kg_co2e: kg, low_carbon: low };
+}
+
+async function hashUsed(db: D1Database, hash: string) {
+  return (await db.prepare("SELECT 1 AS x FROM activities WHERE image_hash = ?").bind(hash).first()) != null;
+}
+
+ai.post("/meals/photo", student, async (c) => {
+  const db = c.env.DB;
+  const img = await decodeImage((await readBody(c)).image);
+  if ("error" in img) return fail(c, 400, "invalid_image", "Take a JPEG, PNG or WebP photo under 1.5 MB.");
+  if (await hashUsed(db, img.hash)) return fail(c, 409, "duplicate_photo", "This photo has already been logged.");
+  const r = await aiJson(c.env, { instructions: MEAL_PROMPT, text: "What is this meal?", image: { mime: img.mime, base64: img.base64 } }, validateMeal, mockMeal, c.env.AI_FETCH);
+  const [factors, s] = await Promise.all([factorTable(db), loadSettings(db)]);
+  const a = assess(r.value.parts, factors);
+  return c.json({
+    dish: r.value.dish, parts: r.value.parts, confidence: r.value.confidence, ...a,
+    points: a.low_carbon ? s.points_photo_low_carbon : 0, image_hash: img.hash, source: r.source,
+  });
+});
+
+ai.post("/meals/photo/confirm", student, async (c) => {
+  const db = c.env.DB;
+  const body = await readBody(c);
+  const dish = typeof body.dish === "string" ? body.dish.trim() : "";
+  const hash = typeof body.image_hash === "string" && /^[0-9a-f]{64}$/.test(body.image_hash) ? body.image_hash : null;
+  const partsOk = body.parts && typeof body.parts === "object" && !Array.isArray(body.parts);
+  if (dish.length < 1 || dish.length > 80 || !hash || !partsOk) return fail(c, 400, "invalid_meal", "Check the dish name and try again.");
+  if (await hashUsed(db, hash)) return fail(c, 409, "duplicate_photo", "This photo has already been logged.");
+  const parts = cleanParts(body.parts);
+  const [factors, s] = await Promise.all([factorTable(db), loadSettings(db)]);
+  const a = assess(parts, factors);
+  const full = a.low_carbon ? s.points_photo_low_carbon : 0;
+  let points: number;
+  try {
+    points = await insertCapped(
+      db,
+      { user_id: c.get("user")!.id, category: "food", type: "meal", kg_co2e: a.kg_co2e, source: "photo", low_carbon: a.low_carbon, image_hash: hash, detail: { dish, parts } },
+      full, s.self_reported_daily_cap, Date.now(),
+    );
+  } catch (e) {
+    if (String(e).includes("UNIQUE")) return fail(c, 409, "duplicate_photo", "This photo has already been logged.");
+    throw e;
+  }
+  return c.json({ points, capped: points < full, ...a }, 201);
 });
