@@ -60,6 +60,17 @@ describe("tap → seller confirm", () => {
     expect(done).toMatchObject({ state: "confirmed", result: { points: 35, low_carbon: true, item_name: "Vegetarian noodles with tofu" } });
   });
 
+  it("tapping twice (or reloading /tap) returns the same pending claim", async () => {
+    const ctx = await setup();
+    const uid = await student(ctx);
+    const t = (await nfcToken(ctx)).body;
+    const first = await ctx.req("/api/tap", { as: uid, body: { stall_id: "noodles" } });
+    const again = await ctx.req("/api/tap", { as: uid, body: { stall_id: "noodles" } });
+    expect(first.status).toBe(201);
+    expect(again.status).toBe(201);
+    expect(again.body.token_id).toBe(t.id);
+  });
+
   it("a second student finds nothing pending once someone has tapped", async () => {
     const ctx = await setup();
     const a = await student(ctx, "First");

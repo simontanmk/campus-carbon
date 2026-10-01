@@ -115,14 +115,18 @@ function QrSheet({
   }, [status.state, onClose]);
 
   const [confirming, setConfirming] = useState(false);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
   async function confirm() {
     if (confirming) return;
     setConfirming(true);
+    setConfirmError(null);
     try {
       const r = await api<{ claimed_by: string }>(`/stall/tokens/${active.id}/confirm`, {});
       setStatus({ state: "claimed", claimed_by: r.claimed_by, pending_name: null });
-    } catch {
-      setStatus((s) => ({ ...s }));
+    } catch (e) {
+      // Say why (daily limit, too soon at this stall, already confirmed); an expired code offers a new one.
+      if (e instanceof ApiError && e.status === 410) setStatus((s) => ({ ...s, state: "expired" }));
+      else setConfirmError(e instanceof ApiError ? e.message : "Couldn't confirm. Try again.");
     } finally {
       setConfirming(false);
     }
@@ -152,6 +156,7 @@ function QrSheet({
           status.state === "tapped" ? (
             <>
               <p className="body" style={{ color: "var(--text)" }}>{status.pending_name} tapped the sticker.</p>
+              {confirmError && <p className="error">{confirmError}</p>}
               <button className="btn" disabled={confirming} onClick={confirm}>Confirm</button>
               <p className="muted">Only confirm if they're in front of you.</p>
             </>

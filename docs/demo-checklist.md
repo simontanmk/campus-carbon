@@ -28,6 +28,6 @@ Student devices: one iPhone, one Android.
   - [ ] iPhone (XS or later, unlocked, camera closed) taps the sticker → Safari opens /tap → "waiting for the seller"
   - [ ] Seller sees the name → Confirm → student screen shows the points
   - [ ] Android with NFC on: same flow
-  - [ ] Note confirm time from the export (`confirmed_at` − `created_at` is on the token; activity time is the confirm)
+  - [ ] Confirm latency is in the export: `confirm_latency_ms` (seller item tap → Confirm), on rows with source `nfc`
 - [ ] Admin → Export activities (CSV) opens in a spreadsheet; verified and source columns present
 - [ ] Gemini down? The app shows "Offline estimate" and photo meals earn 0. Re-check later; nothing else breaks.

@@ -19,6 +19,15 @@ nfc.post("/tap", student, async (c) => {
     : null;
   if (!stall) return fail(c, 404, "no_stall", "This sticker isn't linked to a stall.");
   if (stall.verify_method === "qr") return fail(c, 403, "nfc_off", "This stall uses QR codes. Scan the code on the seller's screen.");
+  // A second read of the sticker (phones often fire twice) or a reload returns the student's own pending claim.
+  const mine = await db
+    .prepare("SELECT id FROM tokens WHERE stall_id = ? AND method = 'nfc' AND used_at IS NULL AND pending_user_id = ? AND expires_at > ? ORDER BY created_at DESC LIMIT 1")
+    .bind(stall.id, uid, now)
+    .first<{ id: string }>();
+  if (mine) {
+    const own = (await loadToken(db, mine.id))!;
+    return c.json({ token_id: own.id, stall_name: own.stall_name, item_name: own.item_name }, 201);
+  }
   const pending = await db
     .prepare("SELECT id FROM tokens WHERE stall_id = ? AND method = 'nfc' AND used_at IS NULL AND pending_user_id IS NULL AND expires_at > ? ORDER BY created_at DESC LIMIT 1")
     .bind(stall.id, now)
