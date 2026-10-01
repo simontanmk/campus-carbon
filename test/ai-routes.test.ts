@@ -210,3 +210,18 @@ describe("GET /api/me/nudge", () => {
     expect((ctx.raw.prepare("SELECT COUNT(*) AS n FROM summaries").get() as any).n).toBe(0);
   });
 });
+describe("upload size", () => {
+  it("rejects photo bodies over 3 MB with 413 before parsing", async () => {
+    const ctx = await setup();
+    const { app } = await import("../src/worker/app");
+    const { sign } = await import("../src/worker/lib/token");
+    const big = JSON.stringify({ image: { mime: "image/png", base64: "A".repeat(3_200_000) } });
+    const res = await app.request("https://app.test/api/meals/photo", {
+      method: "POST",
+      headers: { "content-type": "application/json", "content-length": String(big.length), cookie: `uid=${encodeURIComponent(await sign("u-alex", ctx.env.COOKIE_SECRET))}` },
+      body: big,
+    }, ctx.env);
+    expect(res.status).toBe(413);
+    expect((await res.json()).error).toBe("too_large");
+  });
+});

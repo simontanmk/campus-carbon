@@ -9,7 +9,9 @@ export async function decodeImage(raw: unknown): Promise<{ mime: string; base64:
   if (typeof base64 !== "string" || base64.length === 0 || base64.length > MAX_BASE64 || !/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) return { error: "invalid" };
   let bytes: Uint8Array;
   try {
-    bytes = Uint8Array.from(atob(base64), (ch) => ch.charCodeAt(0));
+    const bin = atob(base64);
+    bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
   } catch {
     return { error: "invalid" };
   }

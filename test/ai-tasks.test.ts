@@ -73,6 +73,12 @@ describe("nudge", () => {
     expect(t).toContain("food");
     expect(t).toContain("0.97 kg");
   });
+  it("prompt asks for 2–3 sentences and to mention the swap", async () => {
+    const { NUDGE_PROMPT } = await import("../src/worker/lib/ai-tasks");
+    expect(NUDGE_PROMPT).toMatch(/two or three/i);
+    expect(NUDGE_PROMPT).toMatch(/swap/i);
+  });
+
   it("mock copes with an empty week", () => {
     expect(mockNudge({ first_name: "Bea", week_kg: 0, meals_week: 0, low_carbon_meals_week: 0, biggest: null, swap: null }).text.length).toBeGreaterThan(10);
   });

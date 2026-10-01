@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import type { AppEnv } from "../env";
 import { fail, readBody } from "../http";
 import { aiJson } from "../lib/ai";
@@ -13,6 +14,10 @@ import { weekFacts } from "../facts";
 import { sgWeekStart } from "../lib/time";
 
 export const ai = new Hono<AppEnv>();
+const photoLimit = bodyLimit({
+  maxSize: 3 * 1024 * 1024,
+  onError: (c) => c.json({ error: "too_large", message: "That photo is too large. Try again; the app shrinks photos first." }, 413),
+});
 const student = requireRole("student");
 
 ai.post("/trips/parse", student, async (c) => {
@@ -50,7 +55,7 @@ async function hashUsed(db: D1Database, hash: string) {
   return (await db.prepare("SELECT 1 AS x FROM activities WHERE image_hash = ?").bind(hash).first()) != null;
 }
 
-ai.post("/meals/photo", student, async (c) => {
+ai.post("/meals/photo", photoLimit, student, async (c) => {
   const db = c.env.DB;
   const img = await decodeImage((await readBody(c)).image);
   if ("error" in img) return fail(c, 400, "invalid_image", "Take a JPEG, PNG or WebP photo under 1.5 MB.");

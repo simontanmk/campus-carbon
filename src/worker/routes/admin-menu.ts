@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import type { AppEnv } from "../env";
 import { fail, readBody } from "../http";
 import { decodeImage } from "../image";
@@ -8,6 +9,10 @@ import { computeKg, isLowCarbonMeal, type FactorTable, type Parts } from "../lib
 import { requireRole } from "../session";
 
 export const adminMenu = new Hono<AppEnv>();
+const photoLimit = bodyLimit({
+  maxSize: 3 * 1024 * 1024,
+  onError: (c) => c.json({ error: "too_large", message: "That photo is too large. Try again; the app shrinks photos first." }, 413),
+});
 const admin = requireRole("admin");
 
 type ItemRow = { id: string; stall_id: string; name: string; kind: "meal" | "drink"; parts_json: string; kg_co2e: number | null; low_carbon: number; status: string };
@@ -46,7 +51,7 @@ adminMenu.get("/admin/items", admin, async (c) => {
   return c.json({ items: results.map(shape) });
 });
 
-adminMenu.post("/admin/menu/photo", admin, async (c) => {
+adminMenu.post("/admin/menu/photo", photoLimit, admin, async (c) => {
   const db = c.env.DB;
   const body = await readBody(c);
   const stall = typeof body.stall_id === "string" ? await db.prepare("SELECT id FROM stalls WHERE id = ?").bind(body.stall_id).first<{ id: string }>() : null;

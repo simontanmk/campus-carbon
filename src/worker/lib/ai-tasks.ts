@@ -89,8 +89,9 @@ export type NudgeFacts = {
 };
 
 export const NUDGE_PROMPT =
-  `You write one or two short, warm, specific sentences for a university student about their week's food and travel footprint. ` +
-  `Use only the numbers given; do not invent facts or numbers. No emoji, no exclamation marks. Reply only with JSON {"text": string}.`;
+  `You write two or three short, warm, specific sentences for a university student about their week's food and travel footprint. ` +
+  `If a swap is given, end with it, including the kg it saves. Use only the numbers given; do not invent facts or numbers. ` +
+  `No emoji, no exclamation marks. Reply only with JSON {"text": string}.`;
 
 export function validateNudge(raw: unknown) {
   if (!isObj(raw)) return null;
