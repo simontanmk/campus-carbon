@@ -7,6 +7,8 @@ import { Claim } from "./screens/Claim";
 import { Tap } from "./screens/Tap";
 import { Admin } from "./screens/Admin";
 import { MenuImport } from "./screens/MenuImport";
+import { AdminStalls } from "./screens/AdminStalls";
+import { AdminSettings } from "./screens/AdminSettings";
 import { Welcome } from "./screens/Welcome";
 import { Log } from "./screens/Log";
 import { Missions } from "./screens/Missions";
@@ -39,13 +41,15 @@ export function App() {
       {path === "/claim" && <Claim />}
       {path === "/tap" && <Tap />}
       {path === "/admin/menu" && role === "admin" && <MenuImport />}
-      {path === "/admin" && me.can_switch && <Admin />}
+      {path === "/admin/stalls" && role === "admin" && <AdminStalls />}
+      {path === "/admin/settings" && role === "admin" && <AdminSettings />}
+      {path === "/admin" && me.can_switch && <Admin isAdmin={role === "admin"} />}
       {main && role === "seller" && <Stall />}
       {main && student && path === "/log" && <Log />}
       {main && student && path === "/missions" && <Missions />}
       {main && student && path === "/ranks" && <Ranks />}
       {main && student && !["/log", "/missions", "/ranks"].includes(path) && <Home user={me.user} />}
-      {main && role === "admin" && <Admin />}
+      {main && role === "admin" && <Admin isAdmin={role === "admin"} />}
       {student && main && <TabBar path={path} />}
     </div>
   );

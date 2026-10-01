@@ -90,6 +90,7 @@ export function MenuImport() {
           </div>
         ))}
       </div>
+      <p className="muted">To fix a dish's name or ingredients before approving, use Stalls and items.</p>
     </>
   );
 }
