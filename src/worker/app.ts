@@ -9,6 +9,7 @@ import { me } from "./routes/me";
 import { ai } from "./routes/ai";
 import { adminMenu } from "./routes/admin-menu";
 import { adminSettings } from "./routes/admin-settings";
+import { adminExport } from "./routes/admin-export";
 import { log } from "./routes/log";
 import { progress } from "./routes/progress";
 
@@ -24,6 +25,7 @@ app.route("/", me);
 app.route("/", ai);
 app.route("/", adminMenu);
 app.route("/", adminSettings);
+app.route("/", adminExport);
 app.route("/", log);
 app.route("/", progress);
 
