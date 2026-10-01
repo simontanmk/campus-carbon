@@ -4,6 +4,7 @@ import { navigate, usePath } from "./router";
 import { Home } from "./screens/Home";
 import { Stall } from "./screens/Stall";
 import { Claim } from "./screens/Claim";
+import { Tap } from "./screens/Tap";
 import { Admin } from "./screens/Admin";
 import { MenuImport } from "./screens/MenuImport";
 import { Welcome } from "./screens/Welcome";
@@ -26,7 +27,7 @@ export function App() {
   const role = me.user.role;
 
   const student = role === "student";
-  const main = path !== "/claim" && !path.startsWith("/admin");
+  const main = path !== "/claim" && path !== "/tap" && !path.startsWith("/admin");
   return (
     <div className={student && main ? "page has-tabs" : "page"}>
       {me.can_switch && path !== "/admin" && (
@@ -36,6 +37,7 @@ export function App() {
         </div>
       )}
       {path === "/claim" && <Claim />}
+      {path === "/tap" && <Tap />}
       {path === "/admin/menu" && role === "admin" && <MenuImport />}
       {path === "/admin" && me.can_switch && <Admin />}
       {main && role === "seller" && <Stall />}

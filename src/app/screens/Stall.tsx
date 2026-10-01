@@ -3,25 +3,29 @@ import { useEffect, useState } from "react";
 import { api, ApiError } from "../api";
 
 type Item = { id: string; name: string; kind: string; kg_co2e: number | null; low_carbon: boolean };
-type StallData = { stall: { id: string; name: string; canteen: string; active: boolean }; items: Item[] };
-type Created = { id: string; claim_url: string; expires_at: number };
-type Status = { state: "pending" | "claimed" | "expired"; claimed_by: string | null };
+type StallData = { stall: { id: string; name: string; canteen: string; active: boolean; verify_method: "qr" | "nfc" | "both" }; items: Item[] };
+type Created = { id: string; claim_url: string; expires_at: number; method: "qr" | "nfc" };
+type Status = { state: "pending" | "tapped" | "claimed" | "expired"; claimed_by: string | null; pending_name: string | null };
 
 export function Stall() {
   const [data, setData] = useState<StallData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [byo, setByo] = useState(false);
   const [active, setActive] = useState<(Created & { item: Item; qr: string }) | null>(null);
+  const [mode, setMode] = useState<"qr" | "nfc">("qr");
 
   useEffect(() => {
     api<StallData>("/stall").then(setData).catch((e) => setError(e instanceof ApiError ? e.message : "Couldn't load stall."));
   }, []);
+  useEffect(() => {
+    if (data?.stall.verify_method === "nfc") setMode("nfc");
+  }, [data]);
 
   async function sell(item: Item) {
     setError(null);
     try {
-      const t = await api<Created>("/stall/tokens", { item_id: item.id, byo });
-      const qr = await QRCode.toDataURL(t.claim_url, { margin: 1, width: 560 });
+      const t = await api<Created>("/stall/tokens", { item_id: item.id, byo, method: mode });
+      const qr = t.method === "qr" ? await QRCode.toDataURL(t.claim_url, { margin: 1, width: 560 }) : "";
       setActive({ ...t, item, qr });
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Couldn't create a code.");
@@ -49,6 +53,12 @@ export function Stall() {
           <span />
         </span>
       </label>
+      {data.stall.verify_method === "both" && (
+        <div className="segmented" role="group" aria-label="How the customer claims">
+          <button aria-pressed={mode === "qr"} onClick={() => setMode("qr")}>QR code</button>
+          <button aria-pressed={mode === "nfc"} onClick={() => setMode("nfc")}>NFC sticker</button>
+        </div>
+      )}
       {error && <p className="error">{error}</p>}
       <div className="grid">
         {data.items.map((i) => (
@@ -61,7 +71,7 @@ export function Stall() {
           </button>
         ))}
       </div>
-      <p className="muted" style={{ textAlign: "center" }}>Tap the item sold to show a code</p>
+      <p className="muted" style={{ textAlign: "center" }}>{mode === "nfc" ? "Tap the item sold, then ask the customer to tap the sticker" : "Tap the item sold to show a code"}</p>
       {active && <QrSheet active={active} byo={byo} onClose={close} onRegenerate={() => sell(active.item)} />}
     </>
   );
@@ -79,10 +89,10 @@ function QrSheet({
   onRegenerate: () => void;
 }) {
   const [now, setNow] = useState(Date.now());
-  const [status, setStatus] = useState<Status>({ state: "pending", claimed_by: null });
+  const [status, setStatus] = useState<Status>({ state: "pending", claimed_by: null, pending_name: null });
 
   useEffect(() => {
-    setStatus({ state: "pending", claimed_by: null });
+    setStatus({ state: "pending", claimed_by: null, pending_name: null });
     const tick = setInterval(() => setNow(Date.now()), 250);
     const poll = setInterval(async () => {
       try {
@@ -104,11 +114,25 @@ function QrSheet({
     return () => clearTimeout(t);
   }, [status.state, onClose]);
 
+  const [confirming, setConfirming] = useState(false);
+  async function confirm() {
+    if (confirming) return;
+    setConfirming(true);
+    try {
+      const r = await api<{ claimed_by: string }>(`/stall/tokens/${active.id}/confirm`, {});
+      setStatus({ state: "claimed", claimed_by: r.claimed_by, pending_name: null });
+    } catch {
+      setStatus((s) => ({ ...s }));
+    } finally {
+      setConfirming(false);
+    }
+  }
+
   const secondsLeft = Math.max(0, Math.ceil((active.expires_at - now) / 1000));
-  const expired = status.state === "expired" || (status.state === "pending" && secondsLeft === 0);
+  const expired = status.state === "expired" || ((status.state === "pending" || status.state === "tapped") && secondsLeft === 0);
 
   return (
-    <div className="sheet-backdrop" onClick={onClose}>
+    <div className="sheet-backdrop" onClick={status.state === "tapped" ? undefined : onClose}>
       <div className="sheet glass" onClick={(e) => e.stopPropagation()}>
         <h2 className="title">{active.item.name}{byo ? " + own container" : ""}</h2>
         {status.state === "claimed" ? (
@@ -124,6 +148,19 @@ function QrSheet({
             <p className="body">This code expired.</p>
             <button className="btn" onClick={onRegenerate}>New code</button>
           </>
+        ) : active.method === "nfc" ? (
+          status.state === "tapped" ? (
+            <>
+              <p className="body" style={{ color: "var(--text)" }}>{status.pending_name} tapped the sticker.</p>
+              <button className="btn" disabled={confirming} onClick={confirm}>Confirm</button>
+              <p className="muted">Only confirm if they're in front of you.</p>
+            </>
+          ) : (
+            <>
+              <div className="pulse"><span>Tap</span></div>
+              <p className="muted">Ask the customer to tap their phone on the sticker · <span style={{ fontVariantNumeric: "tabular-nums" }}>{secondsLeft}s</span></p>
+            </>
+          )
         ) : (
           <>
             <img src={active.qr} alt="Claim QR code" />
