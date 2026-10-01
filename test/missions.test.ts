@@ -83,3 +83,11 @@ describe("missionPoints", () => {
     expect(missionPoints(acts, MON, MON + 7 * DAY)).toBe(20);
   });
 });
+describe("configurable mission rewards", () => {
+  it("uses overridden points, including 0", () => {
+    const acts = [lowMeal(MON + H)];
+    expect(currentMissions(acts, MON + 2 * H, { "daily-low-meal": 35 }).daily[0].points).toBe(35);
+    expect(missionPoints(acts, MON, MON + 7 * DAY, { "daily-low-meal": 0 })).toBe(0);
+    expect(missionPoints(acts, MON, MON + 7 * DAY, {})).toBe(20);
+  });
+});

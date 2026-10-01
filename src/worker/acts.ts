@@ -1,5 +1,5 @@
 import { rank, periodPoints, type Ranked } from "./lib/leaderboard";
-import type { Act } from "./lib/missions";
+import type { Act, MissionPoints } from "./lib/missions";
 
 type Row = { user_id: string; created_at: number; type: string; low_carbon: number | null; points: number; verified: number; detail_json: string };
 
@@ -13,16 +13,25 @@ export async function loadActs(db: D1Database, opts: { userId?: string; from?: n
     )
     .bind(opts.userId ?? null, opts.from ?? 0)
     .all<Row>();
-  return results.map(({ detail_json, ...r }) => ({ ...r, detail: JSON.parse(detail_json || "{}") }));
+  return results.map(({ detail_json, ...r }) => ({ ...r, detail: safeJson(detail_json) }));
 }
 
 /** Ranked students for [from, to). */
-export async function standings(db: D1Database, from: number, to: number): Promise<Ranked[]> {
+export async function standings(db: D1Database, from: number, to: number, points?: MissionPoints): Promise<Ranked[]> {
   const [acts, users] = await Promise.all([
     loadActs(db, { from }),
     db.prepare("SELECT id, display_name FROM users WHERE role = 'student'").all<{ id: string; display_name: string }>(),
   ]);
   const byUser = new Map<string, Act[]>();
   for (const a of acts) if (a.created_at < to) byUser.set(a.user_id, [...(byUser.get(a.user_id) ?? []), a]);
-  return rank(users.results.map((u) => ({ user_id: u.id, display_name: u.display_name, points: periodPoints(byUser.get(u.id) ?? [], from, to) })));
+  return rank(users.results.map((u) => ({ user_id: u.id, display_name: u.display_name, points: periodPoints(byUser.get(u.id) ?? [], from, to, points) })));
+}
+
+function safeJson(s: string | null): Record<string, unknown> {
+  try {
+    const v = JSON.parse(s || "{}");
+    return v && typeof v === "object" && !Array.isArray(v) ? v : {};
+  } catch {
+    return {};
+  }
 }

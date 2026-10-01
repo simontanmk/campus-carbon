@@ -1,4 +1,4 @@
-import { missionPoints, type Act } from "./missions";
+import { missionPoints, type Act, type MissionPoints } from "./missions";
 
 export type Entry = { user_id: string; display_name: string; points: number };
 export type Ranked = Entry & { rank: number };
@@ -18,7 +18,7 @@ export function rank(entries: Entry[]): Ranked[] {
   });
 }
 
-export function periodPoints(acts: Act[], from: number, to: number): number {
+export function periodPoints(acts: Act[], from: number, to: number, points?: MissionPoints): number {
   const activity = acts.reduce((n, a) => (a.created_at >= from && a.created_at < to ? n + a.points : n), 0);
-  return activity + missionPoints(acts, from, to);
+  return activity + missionPoints(acts, from, to, points);
 }

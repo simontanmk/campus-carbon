@@ -8,6 +8,7 @@ import { claim } from "./routes/claim";
 import { me } from "./routes/me";
 import { ai } from "./routes/ai";
 import { adminMenu } from "./routes/admin-menu";
+import { adminSettings } from "./routes/admin-settings";
 import { log } from "./routes/log";
 import { progress } from "./routes/progress";
 
@@ -22,6 +23,7 @@ app.route("/", claim);
 app.route("/", me);
 app.route("/", ai);
 app.route("/", adminMenu);
+app.route("/", adminSettings);
 app.route("/", log);
 app.route("/", progress);
 
