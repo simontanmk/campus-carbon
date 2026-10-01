@@ -24,8 +24,21 @@ function assess(kind: "meal" | "drink", parts: Parts, f: FactorTable) {
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "item";
 
 adminMenu.get("/admin/stalls", admin, async (c) => {
-  const { results } = await c.env.DB.prepare("SELECT id, name, canteen FROM stalls ORDER BY name").all();
-  return c.json({ stalls: results });
+  const { results } = await c.env.DB.prepare("SELECT id, name, canteen, active, verify_method FROM stalls ORDER BY name").all<{ active: number }>();
+  return c.json({ stalls: results.map((r) => ({ ...r, active: r.active === 1 })) });
+});
+
+adminMenu.post("/admin/stalls/:id", admin, async (c) => {
+  const db = c.env.DB;
+  const cur = await db.prepare("SELECT id, name, canteen, active, verify_method FROM stalls WHERE id = ?").bind(c.req.param("id")).first<{ id: string; name: string; canteen: string; active: number; verify_method: string }>();
+  if (!cur) return fail(c, 404, "no_stall", "That stall doesn't exist.");
+  const b = await readBody(c);
+  const bad = ("active" in b && typeof b.active !== "boolean") || ("verify_method" in b && !["qr", "nfc", "both"].includes(b.verify_method as string));
+  if (bad) return fail(c, 400, "invalid_stall", "Active must be on or off; verify method must be QR, NFC or both.");
+  const active = "active" in b ? (b.active ? 1 : 0) : cur.active;
+  const vm = "verify_method" in b ? (b.verify_method as string) : cur.verify_method;
+  await db.prepare("UPDATE stalls SET active = ?, verify_method = ? WHERE id = ?").bind(active, vm, cur.id).run();
+  return c.json({ stall: { id: cur.id, name: cur.name, canteen: cur.canteen, active: active === 1, verify_method: vm } });
 });
 
 adminMenu.get("/admin/items", admin, async (c) => {
@@ -42,9 +55,26 @@ adminMenu.post("/admin/menu/photo", admin, async (c) => {
   if ("error" in img) return fail(c, 400, "invalid_image", "Take a JPEG, PNG or WebP photo under 1.5 MB.");
   const r = await aiJson(c.env, { instructions: MENU_PROMPT, text: "List this stall's menu.", image: { mime: img.mime, base64: img.base64 } }, validateMenu, mockMenu, c.env.AI_FETCH);
   const f = await factorTable(db);
-  const rows = r.value.items.map((i) => ({ id: `${stall.id}-${slug(i.name)}-${crypto.randomUUID().slice(0, 4)}`, stall_id: stall.id, name: i.name, kind: i.kind, parts_json: JSON.stringify(i.parts), ...assess(i.kind, i.parts, f), status: "draft" }));
+  const rows = r.value.items.map((i) => ({ id: `${stall.id}-${slug(i.name)}-${crypto.randomUUID().slice(0, 8)}`, stall_id: stall.id, name: i.name, kind: i.kind, parts_json: JSON.stringify(i.parts), ...assess(i.kind, i.parts, f), status: "draft" }));
   await db.batch(rows.map((x) => db.prepare("INSERT INTO items (id, stall_id, name, kind, parts_json, kg_co2e, low_carbon, points, status) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, 'draft')").bind(x.id, x.stall_id, x.name, x.kind, x.parts_json, x.kg_co2e, x.low_carbon)));
   return c.json({ items: rows.map((x) => shape(x as ItemRow)), source: r.source }, 201);
+});
+
+adminMenu.post("/admin/items", admin, async (c) => {
+  const db = c.env.DB;
+  const b = await readBody(c);
+  const stall = typeof b.stall_id === "string" ? await db.prepare("SELECT id FROM stalls WHERE id = ?").bind(b.stall_id).first<{ id: string }>() : null;
+  if (!stall) return fail(c, 404, "no_stall", "Pick a stall first.");
+  const name = typeof b.name === "string" ? b.name.trim() : "";
+  const kind = b.kind === "drink" ? "drink" : b.kind === "meal" ? "meal" : null;
+  const partsOk = b.parts && typeof b.parts === "object" && !Array.isArray(b.parts);
+  if (name.length < 1 || name.length > 80 || !kind || !partsOk) return fail(c, 400, "invalid_item", "Check the name, kind, ingredients and status.");
+  const parts = cleanParts(b.parts);
+  const a = assess(kind, parts, await factorTable(db));
+  const id = `${stall.id}-${slug(name)}-${crypto.randomUUID().slice(0, 8)}`;
+  await db.prepare("INSERT INTO items (id, stall_id, name, kind, parts_json, kg_co2e, low_carbon, points, status) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, 'draft')")
+    .bind(id, stall.id, name, kind, JSON.stringify(parts), a.kg_co2e, a.low_carbon).run();
+  return c.json({ item: shape({ id, stall_id: stall.id, name, kind, parts_json: JSON.stringify(parts), kg_co2e: a.kg_co2e, low_carbon: a.low_carbon, status: "draft" }) }, 201);
 });
 
 adminMenu.post("/admin/items/:id", admin, async (c) => {
@@ -73,6 +103,8 @@ adminMenu.post("/admin/items/:id/delete", admin, async (c) => {
   const cur = await db.prepare("SELECT status FROM items WHERE id = ?").bind(c.req.param("id")).first<{ status: string }>();
   if (!cur) return fail(c, 404, "no_item", "That item doesn't exist.");
   if (cur.status !== "draft") return fail(c, 409, "not_draft", "Only drafts can be deleted. Set it back to draft first.");
+  const used = await db.prepare("SELECT (SELECT COUNT(*) FROM activities WHERE item_id = ?1) + (SELECT COUNT(*) FROM tokens WHERE item_id = ?1) AS n").bind(c.req.param("id")).first<number>("n");
+  if ((used ?? 0) > 0) return fail(c, 409, "in_use", "Students have already logged this item, so it can't be deleted. Keep it as a draft to hide it.");
   await db.prepare("DELETE FROM items WHERE id = ? AND status = 'draft'").bind(c.req.param("id")).run();
   return c.json({ deleted: true });
 });

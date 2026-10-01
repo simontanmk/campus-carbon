@@ -69,4 +69,28 @@ describe("admin menu import", () => {
     const ctx = await setup();
     expect((await ctx.req("/api/admin/items/nope", { as: "u-admin", body: { name: "X" } })).status).toBe(404);
   });
+  it("updates a stall's active flag and verify method", async () => {
+    const ctx = await setup();
+    const res = await ctx.req("/api/admin/stalls/econ-rice", { as: "u-admin", body: { active: false, verify_method: "both" } });
+    expect(res.body.stall).toMatchObject({ id: "econ-rice", active: false, verify_method: "both" });
+    expect((await ctx.req("/api/admin/stalls/econ-rice", { as: "u-admin", body: { verify_method: "laser" } })).body.error).toBe("invalid_stall");
+    expect((await ctx.req("/api/admin/stalls/nope", { as: "u-admin", body: { active: true } })).status).toBe(404);
+  });
+
+  it("creates a draft item by hand with kg from factors", async () => {
+    const ctx = await setup();
+    const res = await ctx.req("/api/admin/items", { as: "u-admin", body: { stall_id: "noodles", name: "Tofu laksa", kind: "meal", parts: { wheat: 100, tofu: 80, veg: 60 } } });
+    expect(res.status).toBe(201);
+    expect(res.body.item).toMatchObject({ name: "Tofu laksa", status: "draft", low_carbon: true, kg_co2e: 0.44 });
+    expect(res.body.item.id).toMatch(/^noodles-tofu-laksa-[0-9a-f]{8}$/);
+    expect((await ctx.req("/api/admin/items", { as: "u-admin", body: { stall_id: "noodles", name: "", kind: "meal", parts: {} } })).body.error).toBe("invalid_item");
+  });
+
+  it("refuses to delete an item that activities or tokens refer to", async () => {
+    const ctx = await setup();
+    await ctx.req("/api/admin/items/econ-veg-egg", { as: "u-admin", body: { status: "draft" } });
+    const res = await ctx.req("/api/admin/items/econ-veg-egg/delete", { as: "u-admin", body: {} });
+    expect(res.status).toBe(409);
+    expect(res.body.error).toBe("in_use");
+  });
 });
