@@ -142,6 +142,8 @@ A static NFC sticker holds `https://<app>/tap?stall=<id>`. It uses the phone's b
 3. The stall view shows the student's name and a Confirm button. Confirm sets `confirmed_at` and records the activity as in QR steps 5–6. Nothing is recorded without Confirm.
 4. Confirm latency (`confirmed_at − created_at`) is kept for measuring seller workload.
 
+Implemented: the seller's sheet shows the tapping student's name with Confirm. The student's page waits and shows the points after Confirm. Rate limits are checked at tap and again at Confirm. A new NFC token at a stall expires the previous pending one.
+
 Device testing (iPhone background reading, sticker placement near metal) is left to the team.
 
 ### 8.3 Trip
@@ -232,6 +234,8 @@ Known limitation: a student stays under budget by not logging. Accepted for the 
 - Persona switcher
 - Point and cap settings
 - CSV export of activities (every column, including `verified` and `source`)
+
+Implemented: Stalls and items (active, verify method, NFC sticker link, edit and add items with ingredients in grams, approve and hide), Points and limits (all settings, including mission rewards), CSV export, menu photo import. Admin tools need the real admin role. A switched persona sees only the persona list.
 
 ## 12. Visual design
 

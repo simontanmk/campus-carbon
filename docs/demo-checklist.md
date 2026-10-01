@@ -17,3 +17,17 @@ Student devices: one iPhone, one Android.
 - [ ] Rehearsal claims count toward the limits (5 per day, 1 per stall per 10 min). For the live run, use a fresh display name, or raise the daily limit for the day:
       `npx wrangler d1 execute campus-carbon --remote --command "UPDATE settings SET value='50' WHERE key='rate_daily_max'"`
 - [ ] Open the app in Safari or Chrome, not inside a chat app's built-in browser: in-app browsers can drop the login cookie, so a returning student looks like a new user.
+
+## Stage 2–4 checks (real phones)
+
+- [ ] Today → Snap a meal → photo of a real dish → "AI estimate" card → edit the name if needed → Log meal → appears in Recent
+- [ ] Log → type "hive to hall 11" → Find → both places filled → tap Walk → +10
+- [ ] Missions shows today's and this week's missions; Ranks shows you highlighted
+- [ ] NFC (needs a sticker written with the stall link from Admin → Stalls and items):
+  - [ ] Seller (stall set to NFC or Both) chooses NFC sticker, taps an item → "Tap" pulse
+  - [ ] iPhone (XS or later, unlocked, camera closed) taps the sticker → Safari opens /tap → "waiting for the seller"
+  - [ ] Seller sees the name → Confirm → student screen shows the points
+  - [ ] Android with NFC on: same flow
+  - [ ] Note confirm time from the export (`confirmed_at` − `created_at` is on the token; activity time is the confirm)
+- [ ] Admin → Export activities (CSV) opens in a spreadsheet; verified and source columns present
+- [ ] Gemini down? The app shows "Offline estimate" and photo meals earn 0. Re-check later; nothing else breaks.
