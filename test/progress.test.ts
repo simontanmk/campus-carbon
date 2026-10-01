@@ -58,6 +58,18 @@ describe("GET /api/missions", () => {
 });
 
 describe("GET /api/leaderboard", () => {
+  it("shows the same points on Today and Ranks for a student with mixed activity", async () => {
+    const ctx = await setup();
+    const uid = await student(ctx, "Same");
+    add(ctx, uid, "x1", "meal", { low: 1, points: 20 });
+    add(ctx, uid, "x2", "byo", { points: 15 });
+    await ctx.req("/api/trips", { as: uid, body: { from_id: "hive", to_id: "north-spine", mode: "walk" } });
+    const today = (await ctx.req("/api/me/summary", { as: uid })).body.points_week;
+    const ranks = (await ctx.req("/api/leaderboard", { as: uid })).body.me.points;
+    expect(ranks).toBe(today);
+    expect(today).toBeGreaterThan(45);
+  });
+
   it("ranks this week's students by activity plus mission points", async () => {
     const ctx = await setup();
     const a = await student(ctx, "Ann");

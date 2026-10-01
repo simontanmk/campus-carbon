@@ -18,7 +18,7 @@ function List({ title, items }: { title: string; items: Mission[] }) {
               <span>{m.name}</span>
               <span className="reward">{m.completed ? "Done" : `+${m.points}`}</span>
             </div>
-            <div className="progress" aria-label={`${m.progress} of ${m.target}`}>
+            <div className="progress" role="progressbar" aria-valuemin={0} aria-valuemax={m.target} aria-valuenow={m.progress} aria-label={m.name}>
               <i style={{ width: `${(m.progress / m.target) * 100}%` }} />
             </div>
           </div>

@@ -43,7 +43,7 @@ export function Ranks() {
           )}
         </div>
       )}
-      <p className="muted">Points from meals, trips, returns and mission bonuses. Resets every Monday.</p>
+      <p className="muted">Points from meals, your own cup, trips, returns and mission bonuses. Resets every Monday.</p>
     </>
   );
 }
