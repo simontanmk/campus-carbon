@@ -80,3 +80,16 @@ describe("activityLabel for photo meals", () => {
     expect(activityLabel({ type: "meal", item_name: null, detail: { dish: "Vegetarian noodles with tofu" }, place_names: null })).toBe("Vegetarian noodles with tofu");
   });
 });
+import { formatParts, parsePartsText } from "../src/app/copy";
+
+describe("ingredient text", () => {
+  it("parses 'key grams' pairs separated by commas or new lines", () => {
+    expect(parsePartsText("rice 80, veg 150\neggs 50g")).toEqual({ parts: { rice: 80, veg: 150, eggs: 50 }, unknown: [] });
+  });
+  it("reports unknown or malformed entries", () => {
+    expect(parsePartsText("rice 80, chilli 5, tofu")).toEqual({ parts: { rice: 80 }, unknown: ["chilli 5", "tofu"] });
+  });
+  it("formats parts back to text", () => {
+    expect(formatParts({ rice: 80, veg: 150 })).toBe("rice 80, veg 150");
+  });
+});

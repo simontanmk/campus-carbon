@@ -57,3 +57,19 @@ export function ordinal(n: number): string {
   if (t >= 11 && t <= 13) return `${n}th`;
   return `${n}${({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th"}`;
 }
+export const PART_KEYS = ["rice", "wheat", "poultry", "pork", "beef_herd", "beef_dairy", "fish_farmed", "eggs", "tofu", "milk", "coffee", "cane_sugar", "veg"];
+
+export function parsePartsText(text: string): { parts: Record<string, number>; unknown: string[] } {
+  const parts: Record<string, number> = {};
+  const unknown: string[] = [];
+  for (const raw of text.split(/[,\n]/).map((s) => s.trim()).filter(Boolean)) {
+    const m = /^([a-z_]+)\s+(\d+(?:\.\d+)?)\s*g?$/i.exec(raw);
+    if (m && PART_KEYS.includes(m[1].toLowerCase())) parts[m[1].toLowerCase()] = Number(m[2]);
+    else unknown.push(raw);
+  }
+  return { parts, unknown };
+}
+
+export function formatParts(parts: Record<string, number>): string {
+  return Object.entries(parts).map(([k, g]) => `${k} ${g}`).join(", ");
+}
