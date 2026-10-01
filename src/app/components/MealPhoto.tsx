@@ -57,7 +57,15 @@ export function MealPhoto({ label = "Take a photo", primary = false, onLogged }:
       ) : (
         <div className="estimate">
           <span className="tag">{estimate.source === "mock" ? "Offline estimate" : "AI estimate"} · self-reported</span>
-          <div className="title" style={{ fontSize: 20 }}>{estimate.dish}</div>
+          <input
+            type="text"
+            aria-label="Dish name"
+            value={estimate.dish}
+            maxLength={80}
+            onChange={(e) => setEstimate({ ...estimate, dish: e.target.value })}
+            style={{ fontFamily: "var(--serif)", fontSize: 20, padding: "8px 12px" }}
+          />
+          <span className="tag">Fix the name if it's wrong. Points and kg come from the photo estimate.</span>
           <div className="muted">
             {estimate.kg_co2e == null ? "kg unknown" : `${estimate.kg_co2e} kg CO₂e`}
             {estimate.low_carbon ? " · low-carbon" : ""} · {estimate.points > 0 ? `+${estimate.points}` : "0 points"}
@@ -66,7 +74,7 @@ export function MealPhoto({ label = "Take a photo", primary = false, onLogged }:
             <button className="btn btn-secondary" disabled={busy} onClick={() => setEstimate(null)}>Cancel</button>
             <button
               className="btn"
-              disabled={busy}
+              disabled={busy || estimate.dish.trim() === ""}
               onClick={() =>
                 run(async () => {
                   const r = await api<{ points: number; capped: boolean }>("/meals/photo/confirm", { dish: estimate.dish, parts: estimate.parts, image_hash: estimate.image_hash, ticket: estimate.ticket });
