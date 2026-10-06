@@ -72,6 +72,8 @@ export function underBudget(rows: BudgetRow[], now: number): UnderBudget | null 
   let below = 0;
   for (const list of byUser.values()) {
     if (!list.some((r) => r.kg_co2e != null && r.created_at >= lastStart && r.created_at < lastStart + WEEK)) continue;
+    // Last week must lie wholly after the baseline week; a part-week overlapping it is trivially "under".
+    if (list[0].user_created_at + WEEK > lastStart) continue;
     const b = computeBudget({ createdAt: list[0].user_created_at, now, acts: list });
     if (!b.ready) continue;
     of++;

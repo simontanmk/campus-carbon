@@ -144,3 +144,11 @@ describe("stallInsights", () => {
     });
   });
 });
+
+describe("underBudget: last week must be a full budget week", () => {
+  it("skips a student who joined during last week (their last week is part of their baseline)", () => {
+    const created = MON - 5 * DAY; // joined last Wednesday; budget ready today, last week only 5 days
+    const rows: BudgetRow[] = [0, 1, 2, 3, 4].map((d) => ({ user_id: "w", user_created_at: created, created_at: created + d * DAY + H, category: "food", kg_co2e: 1.2 }));
+    expect(underBudget(rows, NOW + 2 * DAY)).toBeNull();
+  });
+});

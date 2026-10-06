@@ -8,8 +8,10 @@ export class ApiError extends Error {
   }
 }
 
-export async function api<T>(path: string, body?: unknown): Promise<T> {
+/** `fresh` skips the browser's HTTP cache (for polls of endpoints that send Cache-Control). */
+export async function api<T>(path: string, body?: unknown, opts: { fresh?: boolean } = {}): Promise<T> {
   const res = await fetch(`/api${path}`, {
+    cache: opts.fresh ? "no-store" : undefined,
     method: body === undefined ? "GET" : "POST",
     headers: body === undefined ? undefined : { "content-type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),

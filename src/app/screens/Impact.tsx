@@ -16,7 +16,7 @@ export function Impact() {
   const [qr, setQr] = useState("");
 
   useEffect(() => {
-    const load = () => api<ImpactData>("/impact").then((x) => { setD(x); setFailed(false); }).catch(() => setFailed(true));
+    const load = () => api<ImpactData>("/impact", undefined, { fresh: true }).then((x) => { setD(x); setFailed(false); }).catch(() => setFailed(true));
     load();
     const t = setInterval(load, 30_000);
     return () => clearInterval(t);
@@ -33,7 +33,7 @@ export function Impact() {
       <div className="eyebrow">This week on campus</div>
       <h1 className="impact-headline">≈ {d.kg_saved} kg CO₂e saved</h1>
       <p className="muted">
-        Estimated, vs an average campus meal{d.avg_meal_kg != null ? ` (${d.avg_meal_kg} kg)` : ""}, from {d.verified_meals} stall-verified {d.verified_meals === 1 ? "meal" : "meals"}.
+        Estimated, vs an average meal on today's campus menu{d.avg_meal_kg != null ? ` (${d.avg_meal_kg} kg)` : ""}, from {d.verified_meals} stall-verified {d.verified_meals === 1 ? "meal" : "meals"}.
       </p>
       {d.under_budget && (
         <p className="body">
@@ -49,7 +49,7 @@ export function Impact() {
       </div>
 
       <div>
-        <div className="section-head">Low-carbon share, last 8 weeks</div>
+        <div className="section-head">Low-carbon share and kg saved, last 8 weeks</div>
         <WeekBars weeks={d.weeks} />
       </div>
 
@@ -68,7 +68,7 @@ function WeekBars({ weeks }: { weeks: Week[] }) {
   const W = 40;
   const H = 90;
   return (
-    <svg className="week-bars" viewBox={`0 0 ${weeks.length * W} ${H + 34}`} role="img" aria-label="Weekly low-carbon share">
+    <svg className="week-bars" viewBox={`0 0 ${weeks.length * W} ${H + 46}`} role="img" aria-label="Weekly low-carbon share and kg saved">
       {weeks.map((w, i) => {
         const h = w.low_carbon_share == null ? 2 : Math.max(2, w.low_carbon_share * H);
         return (
@@ -76,6 +76,7 @@ function WeekBars({ weeks }: { weeks: Week[] }) {
             <rect x={0} y={H - h} width={W - 12} height={h} rx={4} fill={w.low_carbon_share == null ? "var(--line)" : "var(--accent)"} />
             <text x={(W - 12) / 2} y={H + 13} textAnchor="middle" fontSize="9" fill="var(--muted)">{weekLabel(w.week_start)}</text>
             <text x={(W - 12) / 2} y={H + 26} textAnchor="middle" fontSize="9" fill="var(--text-2)">{pct(w.low_carbon_share)}</text>
+            <text x={(W - 12) / 2} y={H + 38} textAnchor="middle" fontSize="8" fill="var(--accent)">{w.kg_saved} kg</text>
           </g>
         );
       })}

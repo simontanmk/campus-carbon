@@ -26,6 +26,11 @@ async function loadInsightActs(db: D1Database, from: number, stallId: string | n
 
 // Public: totals only (spec §4.1). Never add names, ids or per-stall figures here.
 insights.get("/impact", async (c) => {
+  // A Worker's Cache-Control header isn't stored at the edge, so cache explicitly: D1 runs at most once per 30 s per data centre.
+  const cache = (globalThis as { caches?: { default?: Cache } }).caches?.default;
+  const key = new Request(`${new URL(c.req.url).origin}/api/impact`);
+  const hit = cache ? await cache.match(key) : undefined;
+  if (hit) return hit;
   const db = c.env.DB;
   const now = Date.now();
   const lastStart = sgWeekStart(now) - WEEK;
@@ -40,7 +45,9 @@ insights.get("/impact", async (c) => {
     ).bind(lastStart, lastStart + WEEK).all<BudgetRow>(),
   ]);
   c.header("Cache-Control", "public, max-age=30");
-  return c.json(impact({ acts, avgMealKg: averageMealKg(items.results), budgetRows: budgetRows.results, now }));
+  const res = c.json(impact({ acts, avgMealKg: averageMealKg(items.results), budgetRows: budgetRows.results, now }));
+  if (cache) await cache.put(key, res.clone());
+  return res;
 });
 
 insights.get("/admin/insights", requireRole("admin"), async (c) => {

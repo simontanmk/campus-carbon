@@ -45,7 +45,7 @@ All of these are computed on read from `activities`, like missions and the leade
 - **Estimated kg saved:** the sum, over verified low-carbon meals with a known kg, of `max(0, average − meal kg)`. It is rounded to 0.1 kg.
   - The label always says "estimated, vs an average campus meal".
 - **Under budget (last week):**
-  - **Who counts:** students whose budget is ready (main spec §10, `computeBudget`) and who logged at least one activity with a kg last week.
+  - **Who counts:** students whose budget was ready before last week started (`created_at + 7 days ≤` last week's start, so last week lies wholly after their baseline week) and who logged at least one activity with a kg last week.
   - **Under** means last week's kg ≤ the overall target.
   - **Total below target:** the sum of `target − last_week` over those students.
   - **Why last week:** this uses the last full week, because a part-week is trivially under target.
@@ -139,7 +139,7 @@ Returns `{ this_week: Stats, last_week: Stats }` for the seller's own `stall_id`
 
 - `/impact` never exposes names, ids, stalls or anything per student. It is safe for posters.
 - The seller endpoint is filtered by the session's `stall_id` on the server, never by a parameter.
-- No new writes, so no new abuse surface. The public endpoint's database cost is capped by its 30 s cache.
+- No new writes, so no new abuse surface. A Worker's `Cache-Control` header alone isn't stored at Cloudflare's edge, so `/api/impact` caches its response in the Cache API (`caches.default`) for 30 s: D1 runs at most once per 30 s per data centre. The projector page polls with `cache: "no-store"` so it never reads a stale browser copy.
 
 ## 7. Testing
 

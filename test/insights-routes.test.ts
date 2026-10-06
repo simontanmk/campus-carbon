@@ -75,3 +75,21 @@ describe("GET /api/stall/insights", () => {
     expect((await ctx.req("/api/stall/insights", { as: "u-alex" })).status).toBe(403);
   });
 });
+
+describe("impact edge cache", () => {
+  it("serves repeat requests from the Cache API for 30 s instead of re-querying D1", async () => {
+    const store = new Map<string, Response>();
+    const fake = { match: async (k: Request) => store.get(k.url)?.clone(), put: async (k: Request, r: Response) => void store.set(k.url, r.clone()) };
+    (globalThis as any).caches = { default: fake };
+    try {
+      const ctx = await setup();
+      expect((await ctx.req("/api/impact")).body.verified_meals).toBe(0);
+      meal(ctx, "u-alex", "noodles", "veg-noodles", 1, 0.4);
+      expect((await ctx.req("/api/impact")).body.verified_meals).toBe(0); // cached copy
+      store.clear();
+      expect((await ctx.req("/api/impact")).body.verified_meals).toBe(1);
+    } finally {
+      delete (globalThis as any).caches;
+    }
+  });
+});
