@@ -1,3 +1,4 @@
+import type { MenuItemKg } from "./lib/insights";
 import { parseSettings, type Settings } from "./lib/settings";
 
 export async function loadSettings(db: D1Database): Promise<Settings> {
@@ -15,4 +16,10 @@ export async function loadMissionPoints(db: D1Database): Promise<(weekStart: num
     for (const r of results) if (r.effective_from <= weekStart) out[r.mission_id] = r.points;
     return out;
   };
+}
+
+/** Every item with its stall's active flag, for the average-campus-meal estimate. */
+export async function loadMenuKg(db: D1Database): Promise<MenuItemKg[]> {
+  const { results } = await db.prepare("SELECT i.kind, i.status, i.kg_co2e, s.active AS stall_active FROM items i JOIN stalls s ON s.id = i.stall_id").all<MenuItemKg>();
+  return results;
 }

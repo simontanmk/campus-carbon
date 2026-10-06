@@ -1,8 +1,9 @@
 import { Hono } from "hono";
 import { safeJson } from "../acts";
+import { loadMenuKg } from "../db";
 import type { AppEnv } from "../env";
 import { fail } from "../http";
-import { adminInsights, averageMealKg, impact, stallInsights, weekStarts, type BudgetRow, type InsightAct, type MenuItemKg } from "../lib/insights";
+import { adminInsights, averageMealKg, impact, stallInsights, weekStarts, type BudgetRow, type InsightAct } from "../lib/insights";
 import { sgWeekStart } from "../lib/time";
 import { requireRole } from "../session";
 
@@ -36,7 +37,7 @@ insights.get("/impact", async (c) => {
   const lastStart = sgWeekStart(now) - WEEK;
   const [acts, items, budgetRows] = await Promise.all([
     loadInsightActs(db, weekStarts(now)[0]),
-    db.prepare("SELECT i.kind, i.status, i.kg_co2e, s.active AS stall_active FROM items i JOIN stalls s ON s.id = i.stall_id").all<MenuItemKg>(),
+    loadMenuKg(db),
     // Budgets need each student's whole history, but only for students who logged kg last week.
     db.prepare(
       `SELECT a.user_id, u.created_at AS user_created_at, a.created_at, a.category, a.kg_co2e
@@ -45,7 +46,7 @@ insights.get("/impact", async (c) => {
     ).bind(lastStart, lastStart + WEEK).all<BudgetRow>(),
   ]);
   c.header("Cache-Control", "public, max-age=30");
-  const res = c.json(impact({ acts, avgMealKg: averageMealKg(items.results), budgetRows: budgetRows.results, now }));
+  const res = c.json(impact({ acts, avgMealKg: averageMealKg(items), budgetRows: budgetRows.results, now }));
   if (cache) await cache.put(key, res.clone());
   return res;
 });

@@ -73,6 +73,7 @@ me.get("/me/summary", requireRole("student"), async (c) => {
     meals_week: totals?.meals_week ?? 0,
     low_carbon_meals_week: totals?.low_week ?? 0,
     kg_week: Math.round((totals?.kg_week ?? 0) * 100) / 100,
+    recap_ready: myActs.some((a) => a.created_at >= weekStart - 7 * 86_400_000),
     recent: results.map(({ detail_json, from_name, to_name, ...r }) => ({
       ...r,
       low_carbon: r.low_carbon == null ? null : r.low_carbon === 1,

@@ -13,6 +13,7 @@ import { adminExport } from "./routes/admin-export";
 import { log } from "./routes/log";
 import { progress } from "./routes/progress";
 import { insights } from "./routes/insights";
+import { recap } from "./routes/recap";
 
 export const app = new Hono<AppEnv>().basePath("/api");
 
@@ -30,6 +31,7 @@ app.route("/", adminExport);
 app.route("/", log);
 app.route("/", progress);
 app.route("/", insights);
+app.route("/", recap);
 
 app.notFound((c) => c.json({ error: "not_found", message: "Not found." }, 404));
 app.onError((err, c) => {
