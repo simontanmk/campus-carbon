@@ -83,3 +83,5 @@ export function parsePartsText(text: string): { parts: Record<string, number>; u
 export function formatParts(parts: Record<string, number>): string {
   return Object.entries(parts).map(([k, g]) => `${k} ${g}`).join(", ");
 }
+export const pct = (share: number | null): string => (share == null ? "—" : `${Math.round(share * 100)}%`);
+export const weekLabel = (ms: number): string => new Date(ms).toLocaleDateString("en-SG", { day: "numeric", month: "short", timeZone: "Asia/Singapore" });

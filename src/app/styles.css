@@ -193,3 +193,16 @@ select {
 .pulse { width: 120px; height: 120px; border-radius: 50%; background: var(--accent-soft); display: grid; place-items: center; animation: pulse 1.6s ease-in-out infinite; }
 .pulse span { font-family: var(--serif); font-size: 18px; color: var(--accent); }
 @keyframes pulse { 50% { transform: scale(1.06); opacity: 0.8; } }
+
+/* Campus impact (public, projector) */
+.impact { max-width: 1100px; margin: 0 auto; padding: calc(28px + env(safe-area-inset-top)) 20px 40px; display: flex; flex-direction: column; gap: 22px; }
+.impact-headline { font-family: var(--serif); font-weight: 400; font-size: 44px; line-height: 1.08; letter-spacing: -0.02em; margin: 0; color: var(--accent); }
+.impact-figures { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.week-bars { width: 100%; max-width: 640px; height: auto; display: block; }
+.impact-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-top: 0.5px solid var(--line); padding-top: 16px; }
+@media (min-width: 900px) {
+  .impact { padding-top: 56px; gap: 32px; }
+  .impact-headline { font-size: 80px; }
+  .impact-figures { grid-template-columns: repeat(4, 1fr); }
+  .impact .num { font-size: 44px; }
+}

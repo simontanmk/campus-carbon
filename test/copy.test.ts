@@ -107,3 +107,16 @@ describe("ingredient text", () => {
     expect(formatParts({ rice: 80, veg: 150 })).toBe("rice 80, veg 150");
   });
 });
+import { pct, weekLabel } from "../src/app/copy";
+describe("pct", () => {
+  it("formats a share or a dash", () => {
+    expect(pct(0.62)).toBe("62%");
+    expect(pct(0)).toBe("0%");
+    expect(pct(null)).toBe("—");
+  });
+});
+describe("weekLabel", () => {
+  it("names the SGT Monday", () => {
+    expect(weekLabel(Date.UTC(2026, 9, 4, 16))).toBe("5 Oct");
+  });
+});

@@ -10,6 +10,7 @@ import { MenuImport } from "./screens/MenuImport";
 import { AdminStalls } from "./screens/AdminStalls";
 import { AdminSettings } from "./screens/AdminSettings";
 import { Welcome } from "./screens/Welcome";
+import { Impact } from "./screens/Impact";
 import { Log } from "./screens/Log";
 import { Missions } from "./screens/Missions";
 import { Ranks } from "./screens/Ranks";
@@ -23,6 +24,8 @@ export function App() {
     load().catch(() => setMe({ user: null, can_switch: false }));
   }, [load]);
 
+  // Public projector page: no session, no Welcome prompt.
+  if (path === "/impact") return <Impact />;
   if (!me) return null;
   // Welcome keeps the current URL (including /claim?t=...), so the claim resumes after onboarding.
   if (!me.user) return <Welcome onDone={load} />;
