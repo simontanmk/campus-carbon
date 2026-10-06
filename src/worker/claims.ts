@@ -11,6 +11,7 @@ export type TokenRow = {
   stall_name: string; active: number; verify_method: string;
 };
 export type Blocker = readonly [ContentfulStatusCode, string, string];
+export const isBlocker = (r: ClaimResult | Blocker): r is Blocker => Array.isArray(r);
 export type ClaimResult = {
   item_name: string; stall_name: string; kind: "meal" | "drink"; low_carbon: boolean; kg_co2e: number | null; points: number;
   activities: { type: string; points: number; kg_co2e: number | null }[];

@@ -1,4 +1,4 @@
-import type { Parts } from "./carbon";
+import type { Parts } from "./carbon.ts";
 
 export const FACTOR_KEYS = ["rice", "wheat", "poultry", "pork", "beef_herd", "beef_dairy", "fish_farmed", "eggs", "tofu", "milk", "coffee", "cane_sugar", "veg"] as const;
 

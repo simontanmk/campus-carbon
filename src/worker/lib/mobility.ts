@@ -1,4 +1,4 @@
-import type { Settings } from "./settings";
+import type { Settings } from "./settings.ts";
 
 export type Mode = "walk" | "shuttle" | "car";
 export type TripOption = { mode: Mode; minutes: number; kg_co2e: number | null; points: number };

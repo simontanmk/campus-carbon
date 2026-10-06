@@ -65,6 +65,20 @@ describe("budgetLine", () => {
     expect(budgetLine({ categories: { food: { target: 5.1, used: 1.5 }, mobility: { target: 0.85, used: 0.4 }, waste: { target: 0, used: 0 } } }))
       .toBe("Food 1.5 of 5.1 kg · Mobility 0.4 of 0.85 kg");
   });
+  it("doesn't call a category with no baseline over budget", () => {
+    expect(budgetLine({ categories: { food: { target: 5.1, used: 1.5 }, mobility: { target: 0, used: 0.4 }, waste: { target: 0, used: 0 } } }))
+      .toBe("Food 1.5 of 5.1 kg · Mobility 0.4 kg (no first-week baseline)");
+  });
+});
+
+import { budgetNote } from "../src/app/copy";
+describe("budgetNote", () => {
+  it("explains a missing budget when the first week had no footprint", () => {
+    expect(budgetNote({ ready: false, reason: "no_baseline", ready_at: 0 })).toBe("No budget: your first week had nothing with a carbon footprint logged.");
+  });
+  it("gives the start date during the first week", () => {
+    expect(budgetNote({ ready: false, reason: "first_week", ready_at: Date.UTC(2026, 9, 6, 4) })).toBe("Your budget starts Tuesday, 6 October, based on your first week.");
+  });
 });
 import { ordinal } from "../src/app/copy";
 

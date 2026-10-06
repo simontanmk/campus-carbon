@@ -49,8 +49,18 @@ const CAT_LABEL = { food: "Food", mobility: "Mobility", waste: "Waste" } as cons
 export function budgetLine(b: { categories: Record<"food" | "mobility" | "waste", { target: number; used: number }> }): string {
   return (Object.keys(CAT_LABEL) as (keyof typeof CAT_LABEL)[])
     .filter((k) => b.categories[k].target > 0 || b.categories[k].used > 0)
-    .map((k) => `${CAT_LABEL[k]} ${b.categories[k].used} of ${b.categories[k].target} kg`)
+    .map((k) => {
+      const c = b.categories[k];
+      return c.target > 0 ? `${CAT_LABEL[k]} ${c.used} of ${c.target} kg` : `${CAT_LABEL[k]} ${c.used} kg (no first-week baseline)`;
+    })
     .join(" · ");
+}
+
+/** The line under the figures while there's no budget yet. */
+export function budgetNote(b: { ready: false; reason: "first_week" | "no_baseline"; ready_at: number }): string {
+  if (b.reason === "no_baseline") return "No budget: your first week had nothing with a carbon footprint logged.";
+  const day = new Date(b.ready_at).toLocaleDateString("en-SG", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Singapore" });
+  return `Your budget starts ${day}, based on your first week.`;
 }
 export function ordinal(n: number): string {
   const t = n % 100;

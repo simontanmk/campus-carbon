@@ -156,7 +156,7 @@ describe("POST /api/claim — rejections", () => {
 
   it("sixth verified claim today → 429 daily_limit", async () => {
     const ctx = await setup();
-    const ago = Date.now() - 20 * 60_000; // outside the per-stall window, still today in SGT unless run just after midnight
+    const ago = Date.now() - 1000; // at another stall, so only the daily limit applies; a second ago is always today
     for (let i = 0; i < 5; i++) {
       ctx.raw.exec(
         `INSERT INTO activities (id,user_id,category,type,points,verified,source,stall_id,created_at) VALUES ('d${i}','u-alex','food','meal',0,1,'qr','noodles',${ago})`,

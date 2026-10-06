@@ -79,8 +79,11 @@ export const LOCATIONS = [
 ] as const;
 
 /**
- * Demo history. day = days after the persona's created_at (0–13), hour = SGT-ish hour offset.
- * Days 0–6 form the budget baseline; days 7–13 are "last week" for the demo.
+ * Demo history. day = days after the persona's created_at (0–13), hour = SGT clock hour (created_at is SGT midnight).
+ * Days 0–6 form the budget baseline; days 7–13 fill the past week, so how many land in "this week" vs
+ * "last week" depends on the weekday the seed runs.
+ * Append only: ids are seed-<user>-<index>, and re-seeding skips existing ids, so inserting mid-array
+ * would point old ids at different entries.
  * kind "meal"/"drink" reference seeded items; "trip" uses a route and mode.
  */
 export type HistoryEntry =

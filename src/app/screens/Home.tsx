@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { MealPhoto } from "../components/MealPhoto";
 import { api, type User } from "../api";
-import { activityLabel, budgetLine, factHeadline, shortName, weekHeadline } from "../copy";
+import { activityLabel, budgetLine, budgetNote, factHeadline, shortName, weekHeadline } from "../copy";
 
 type Summary = {
   points_total: number;
@@ -77,11 +77,9 @@ export function Home({ user }: { user: User }) {
 
       {data.budget.ready ? (
         <p className="muted" style={{ marginTop: -8 }}>{budgetLine(data.budget)}</p>
-      ) : data.budget.reason === "first_week" ? (
-        <p className="muted" style={{ marginTop: -8 }}>
-          Your budget starts {new Date(data.budget.ready_at).toLocaleDateString("en-SG", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Singapore" })}, based on your first week.
-        </p>
-      ) : null}
+      ) : (
+        <p className="muted" style={{ marginTop: -8 }}>{budgetNote(data.budget)}</p>
+      )}
 
       <MealPhoto label="Snap a meal" primary onLogged={load} />
 

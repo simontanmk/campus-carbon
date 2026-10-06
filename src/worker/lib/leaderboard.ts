@@ -1,4 +1,4 @@
-import { missionPoints, type Act, type MissionPoints } from "./missions";
+import { missionPoints, type Act, type MissionPoints } from "./missions.ts";
 
 export type Entry = { user_id: string; display_name: string; points: number };
 export type Ranked = Entry & { rank: number };

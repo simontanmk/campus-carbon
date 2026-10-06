@@ -22,7 +22,7 @@ export async function aiJson<T>(
   fetchImpl: typeof fetch = fetch,
 ): Promise<{ value: T; source: "live" | "mock" }> {
   if (!aiLive(env)) return { value: mock(), source: "mock" };
-  const url = `${env.AI_BASE_URL.replace(/\/+$/, "")}/chat/completions`;
+  const url = `${env.AI_BASE_URL!.replace(/\/+$/, "")}/chat/completions`;
   const user = req.image
     ? [{ type: "text", text: req.text }, { type: "image_url", image_url: { url: `data:${req.image.mime};base64,${req.image.base64}` } }]
     : req.text;

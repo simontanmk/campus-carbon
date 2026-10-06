@@ -1,4 +1,4 @@
-import { sgWeekStart } from "./time";
+import { sgWeekStart } from "./time.ts";
 
 const DAY = 86_400_000;
 export type Category = "food" | "mobility" | "waste";

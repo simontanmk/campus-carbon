@@ -2,6 +2,7 @@ import { computeKg, isLowCarbonMeal, type FactorTable } from "../src/worker/lib/
 import { BADGES } from "../src/worker/lib/badges.ts";
 import { MISSIONS } from "../src/worker/lib/missions.ts";
 import { DEFAULT_SETTINGS } from "../src/worker/lib/settings.ts";
+import { sgDayStart } from "../src/worker/lib/time.ts";
 import { FACTORS, ITEMS, LOCATIONS, PERSONA_HISTORY, SETTINGS, STALLS, USERS } from "./data.ts";
 import routes from "./routes.json" with { type: "json" };
 
@@ -27,7 +28,8 @@ function upsert(table: string, row: Record<string, Val>, conflict: string[], upd
 export function buildSeedSql(now: number = Date.now()): string {
   const factorTable: FactorTable = Object.fromEntries(FACTORS.filter((f) => f.unit === "kg").map((f) => [f.key, f.kg_per_unit]));
   const factorOf = (k: string) => FACTORS.find((f) => f.key === k)!.kg_per_unit;
-  const created = now - 14 * DAY;
+  // SGT midnight, so each history entry's hour is its SGT clock time and day 13 is always yesterday or earlier.
+  const created = sgDayStart(now) - 14 * DAY;
   const out: string[] = [];
 
   for (const f of FACTORS) out.push(upsert("factors", { ...f }, ["key"], ["kg_per_unit", "unit", "source", "note"]));
@@ -71,7 +73,7 @@ export function buildSeedSql(now: number = Date.now()): string {
   for (const [uid, entries] of Object.entries(PERSONA_HISTORY)) {
     entries.forEach((e, n) => {
       const at = `(SELECT created_at FROM users WHERE id = ${lit(uid)}) + ${e.day * DAY + e.hour * HOUR}`;
-      const id = `seed-${uid}-${n}`;
+      const id = `seed-${uid}-${n}`; // by position: PERSONA_HISTORY arrays are append-only (see data.ts)
       let cols: Record<string, Val>;
       if (e.kind === "trip") {
         const route = findRoute(e.from, e.to);

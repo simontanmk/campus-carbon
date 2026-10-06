@@ -80,11 +80,22 @@ describe("seed", () => {
     expect(kg("u-alex")).toBeGreaterThan(kg("u-chen") * 2);
   });
 
-  it("links sellers to stalls and back-dates accounts 14 days", () => {
+  it("links sellers to stalls and back-dates accounts to SGT midnight 14 days ago", () => {
     const { raw } = seeded();
     const u = raw.prepare("SELECT stall_id, created_at FROM users WHERE id='u-seller-econ'").get() as any;
     expect(u.stall_id).toBe("econ-rice");
-    expect(u.created_at).toBe(Date.UTC(2026, 8, 1) - 14 * 86_400_000);
+    expect(u.created_at).toBe(Date.UTC(2026, 7, 31, 16) - 14 * 86_400_000);
+  });
+
+  it("puts persona lunches at 12:00 SGT and never in the future", () => {
+    const { raw } = seeded();
+    const rows = raw.prepare("SELECT created_at FROM activities WHERE user_id='u-alex' AND type='meal'").all() as any[];
+    const sgHour = (t: number) => new Date(t + 8 * 3_600_000).getUTCHours();
+    expect(rows.length).toBeGreaterThan(0);
+    for (const r of rows) {
+      expect(sgHour(r.created_at)).toBe(12);
+      expect(r.created_at).toBeLessThan(Date.UTC(2026, 8, 1));
+    }
   });
 
   it("escapes single quotes in text", () => {

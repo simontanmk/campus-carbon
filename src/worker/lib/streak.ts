@@ -1,4 +1,4 @@
-import { sgDayStart } from "./time";
+import { sgDayStart } from "./time.ts";
 
 const DAY = 86_400_000;
 

@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import type { AppEnv } from "../env";
-import { loadActs } from "../acts";
+import { loadActs, safeJson } from "../acts";
 import { loadMissionPoints, loadSettings } from "../db";
 import { computeBudget } from "../lib/budget";
 import { missionPoints } from "../lib/missions";
@@ -38,7 +38,7 @@ me.get("/me/summary", requireRole("student"), async (c) => {
     )
     .bind(uid)
     .all<{ type: string; points: number; kg_co2e: number | null; low_carbon: number | null; verified: number; created_at: number; detail_json: string; item_name: string | null; from_name: string | null; to_name: string | null }>();
-  const [weekActs, history, menuRes, settings, createdAt, allActs, myActs, missionPts] = await Promise.all([
+  const [weekActs, history, menuRes, settings, createdAt, myActs, missionPts] = await Promise.all([
     db.prepare("SELECT created_at, type, low_carbon FROM activities WHERE user_id = ? AND created_at >= ?").bind(uid, weekStart)
       .all<{ created_at: number; type: string; low_carbon: number | null }>(),
     db.prepare("SELECT item_id FROM activities WHERE user_id = ? AND type = 'meal' AND item_id IS NOT NULL").bind(uid)
@@ -47,8 +47,6 @@ me.get("/me/summary", requireRole("student"), async (c) => {
       .all<MenuItem & { stall_name: string }>(),
     loadSettings(db),
     db.prepare("SELECT created_at FROM users WHERE id = ?").bind(uid).first<number>("created_at"),
-    db.prepare("SELECT created_at, category, kg_co2e FROM activities WHERE user_id = ?").bind(uid)
-      .all<{ created_at: number; category: "food" | "mobility" | "waste"; kg_co2e: number | null }>(),
     loadActs(db, { userId: uid }),
     loadMissionPoints(db),
   ]);
@@ -61,7 +59,7 @@ me.get("/me/summary", requireRole("student"), async (c) => {
     .sort((a, b) => a.kg_co2e! - b.kg_co2e!)[0];
 
   return c.json({
-    budget: computeBudget({ createdAt: createdAt ?? Date.now(), now: Date.now(), acts: allActs.results }),
+    budget: computeBudget({ createdAt: createdAt ?? Date.now(), now: Date.now(), acts: myActs }),
     days: weekDays(weekActs.results, weekStart),
     swap: bestSwap(history.results.map((h) => h.item_id), menu),
     fact: high && low && high.kg_co2e != null && low.kg_co2e != null
@@ -79,7 +77,7 @@ me.get("/me/summary", requireRole("student"), async (c) => {
       ...r,
       low_carbon: r.low_carbon == null ? null : r.low_carbon === 1,
       verified: r.verified === 1,
-      detail: JSON.parse(detail_json || "{}"),
+      detail: safeJson(detail_json),
       place_names: from_name && to_name ? { from: from_name, to: to_name } : null,
     })),
   });

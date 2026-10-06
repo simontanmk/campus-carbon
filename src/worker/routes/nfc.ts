@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { award, claimBlocker, loadToken } from "../claims";
+import { award, claimBlocker, isBlocker, loadToken } from "../claims";
 import { loadSettings } from "../db";
 import type { AppEnv } from "../env";
 import { fail, readBody } from "../http";
@@ -71,7 +71,7 @@ nfc.post("/stall/tokens/:id/confirm", seller, async (c) => {
   const block = await claimBlocker(db, tok, tok.pending_user_id, now, s);
   if (block) return fail(c, ...block);
   const result = await award(db, tok, tok.pending_user_id, now, s, "nfc");
-  if (Array.isArray(result)) return fail(c, ...result);
+  if (isBlocker(result)) return fail(c, ...result);
   const who = await db.prepare("SELECT display_name FROM users WHERE id = ?").bind(tok.pending_user_id).first<string>("display_name");
   return c.json({ claimed_by: who, points: result.points });
 });

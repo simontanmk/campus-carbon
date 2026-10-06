@@ -1,4 +1,4 @@
-import type { Settings } from "./settings";
+import type { Settings } from "./settings.ts";
 
 export function stallClaimPoints(
   item: { kind: "meal" | "drink"; low_carbon: boolean; points: number | null },
