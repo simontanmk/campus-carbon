@@ -4,7 +4,7 @@ function cell(v: Cell): string {
   if (v == null) return "";
   if (typeof v === "number") return String(v);
   let s = v;
-  if (/^[=+\-@]/.test(s) && !/^-\d+(\.\d+)?$/.test(s)) s = `'${s}`; // spreadsheet formula injection
+  if (/^[=+\-@\t\r]/.test(s) && !/^-\d+(\.\d+)?$/.test(s)) s = `'${s}`; // spreadsheet formula injection
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 

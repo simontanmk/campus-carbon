@@ -60,7 +60,7 @@ stall.post("/stall/tokens", seller, async (c) => {
     .run();
   const token = await sign(id, c.env.TOKEN_SECRET);
   const claim_url = `${new URL(c.req.url).origin}/claim?t=${encodeURIComponent(token)}`;
-  return c.json({ id, token, claim_url, expires_at, method }, 201);
+  return c.json({ id, token, claim_url, expires_at, method, server_now: now }, 201);
 });
 
 stall.get("/stall/tokens/:id", seller, async (c) => {
@@ -72,5 +72,5 @@ stall.get("/stall/tokens/:id", seller, async (c) => {
     .first<{ stall_id: string; expires_at: number; used_at: number | null; pending_user_id: string | null; claimed_by: string | null; pending_name: string | null }>();
   if (!row || row.stall_id !== c.get("user")!.stall_id) return fail(c, 404, "no_token", "Code not found.");
   const state = row.used_at != null ? "claimed" : Date.now() > row.expires_at ? "expired" : row.pending_user_id ? "tapped" : "pending";
-  return c.json({ state, expires_at: row.expires_at, claimed_by: row.claimed_by ?? null, pending_name: row.pending_name ?? null });
+  return c.json({ state, server_now: Date.now(), expires_at: row.expires_at, claimed_by: row.claimed_by ?? null, pending_name: row.pending_name ?? null });
 });

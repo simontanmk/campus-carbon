@@ -3,6 +3,9 @@ export type AiRequest = { instructions: string; text: string; image?: { mime: st
 
 const TIMEOUT_MS = 8000;
 
+/** True when a real model is configured (only then do calls cost quota). */
+export const aiLive = (env: AiEnv) => env.AI_MODE === "live" && !!env.AI_API_KEY && !!env.AI_BASE_URL;
+
 function stripFence(s: string): string {
   return s.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
 }
@@ -18,7 +21,7 @@ export async function aiJson<T>(
   mock: () => T,
   fetchImpl: typeof fetch = fetch,
 ): Promise<{ value: T; source: "live" | "mock" }> {
-  if (env.AI_MODE !== "live" || !env.AI_API_KEY || !env.AI_BASE_URL) return { value: mock(), source: "mock" };
+  if (!aiLive(env)) return { value: mock(), source: "mock" };
   const url = `${env.AI_BASE_URL.replace(/\/+$/, "")}/chat/completions`;
   const user = req.image
     ? [{ type: "text", text: req.text }, { type: "image_url", image_url: { url: `data:${req.image.mime};base64,${req.image.base64}` } }]

@@ -26,6 +26,6 @@ claim.post("/claim", async (c) => {
   const block = await claimBlocker(db, tok, user.id, now, s);
   if (block) return fail(c, ...block);
   const result = await award(db, tok, user.id, now, s, "qr");
-  if (!result) return fail(c, 409, "used", "This code has already been used.");
+  if (Array.isArray(result)) return fail(c, ...result);
   return c.json(result);
 });

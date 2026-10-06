@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { AppEnv, User } from "../env";
 import { fail, readBody } from "../http";
-import { rememberAdmin, requireSwitcher, startSession } from "../session";
+import { forgetAdmin, rememberAdmin, requireSwitcher, startSession } from "../session";
 
 export const auth = new Hono<AppEnv>();
 
@@ -40,4 +40,10 @@ auth.post("/admin/impersonate", requireSwitcher, async (c) => {
   await rememberAdmin(c, c.get("adminId")!);
   await startSession(c, target.id);
   return c.json({ user: target });
+});
+
+/** Hand this device to someone else: keep the current persona, drop the ability to switch. */
+auth.post("/session/stop-switching", (c) => {
+  forgetAdmin(c);
+  return c.json({ ok: true });
 });

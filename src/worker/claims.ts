@@ -8,7 +8,7 @@ export type TokenRow = {
   id: string; stall_id: string; item_id: string; byo: number; method: string;
   created_at: number; expires_at: number; used_at: number | null; used_by: string | null; pending_user_id: string | null;
   item_name: string; kind: "meal" | "drink"; kg_co2e: number | null; low_carbon: number; item_points: number | null;
-  stall_name: string; active: number;
+  stall_name: string; active: number; verify_method: string;
 };
 export type Blocker = readonly [ContentfulStatusCode, string, string];
 export type ClaimResult = {
@@ -21,7 +21,7 @@ export function loadToken(db: D1Database, id: string): Promise<TokenRow | null> 
     .prepare(
       `SELECT t.id, t.stall_id, t.item_id, t.byo, t.method, t.created_at, t.expires_at, t.used_at, t.used_by, t.pending_user_id,
               i.name AS item_name, i.kind, i.kg_co2e, i.low_carbon, i.points AS item_points,
-              s.name AS stall_name, s.active
+              s.name AS stall_name, s.active, s.verify_method
        FROM tokens t JOIN items i ON i.id = t.item_id JOIN stalls s ON s.id = t.stall_id
        WHERE t.id = ?`,
     )
@@ -47,13 +47,26 @@ export async function claimBlocker(db: D1Database, tok: TokenRow, userId: string
   return null;
 }
 
-/** Marks the token used (exactly one winner) and records the verified activities. Null if someone else won. */
-export async function award(db: D1Database, tok: TokenRow, userId: string, now: number, s: Settings, source: "qr" | "nfc"): Promise<ClaimResult | null> {
+/**
+ * Marks the token used (exactly one winner) and records the verified activities, or says why not.
+ * The per-stall window and daily limit are re-checked inside the same UPDATE, so two codes claimed
+ * at the same moment can't both pass the checks in claimBlocker.
+ */
+export async function award(db: D1Database, tok: TokenRow, userId: string, now: number, s: Settings, source: "qr" | "nfc"): Promise<ClaimResult | Blocker> {
   const upd = await db
-    .prepare("UPDATE tokens SET used_at = ?1, used_by = ?2, confirmed_at = CASE WHEN method = 'nfc' THEN ?1 ELSE confirmed_at END WHERE id = ?3 AND used_at IS NULL")
-    .bind(now, userId, tok.id)
+    .prepare(
+      `UPDATE tokens SET used_at = ?1, used_by = ?2, confirmed_at = CASE WHEN method = 'nfc' THEN ?1 ELSE confirmed_at END
+       WHERE id = ?3 AND used_at IS NULL
+         AND NOT EXISTS (SELECT 1 FROM tokens o WHERE o.used_by = ?2 AND o.stall_id = ?4 AND o.used_at > ?5)
+         AND (SELECT COUNT(*) FROM tokens o WHERE o.used_by = ?2 AND o.used_at >= ?6) < ?7`,
+    )
+    .bind(now, userId, tok.id, tok.stall_id, now - s.rate_stall_window_min * 60_000, sgDayStart(now), s.rate_daily_max)
     .run();
-  if (upd.meta.changes !== 1) return null;
+  if (upd.meta.changes !== 1) {
+    const used = await db.prepare("SELECT used_at FROM tokens WHERE id = ?").bind(tok.id).first<number | null>("used_at");
+    if (used != null) return [409, "used", "This code has already been used."];
+    return (await claimBlocker(db, tok, userId, now, s)) ?? [429, "rate_limited", `You can claim at this stall once every ${s.rate_stall_window_min} minutes.`];
+  }
 
   const low = tok.kind === "meal" && tok.low_carbon === 1;
   const mainPoints = stallClaimPoints({ kind: tok.kind, low_carbon: low, points: tok.item_points }, s);

@@ -59,6 +59,8 @@ adminMenu.post("/admin/menu/photo", photoLimit, admin, async (c) => {
   const img = await decodeImage(body.image);
   if ("error" in img) return fail(c, 400, "invalid_image", "Take a JPEG, PNG or WebP photo under 1.5 MB.");
   const r = await aiJson(c.env, { instructions: MENU_PROMPT, text: "List this stall's menu.", image: { mime: img.mime, base64: img.base64 } }, validateMenu, mockMenu, c.env.AI_FETCH);
+  // The offline stand-in would only add made-up dishes to the menu.
+  if (r.source === "mock") return fail(c, 503, "ai_unavailable", "The AI couldn't read the menu just now. Try again in a minute, or add items by hand.");
   const f = await factorTable(db);
   const rows = r.value.items.map((i) => ({ id: `${stall.id}-${slug(i.name)}-${crypto.randomUUID().slice(0, 8)}`, stall_id: stall.id, name: i.name, kind: i.kind, parts_json: JSON.stringify(i.parts), ...assess(i.kind, i.parts, f), status: "draft" }));
   await db.batch(rows.map((x) => db.prepare("INSERT INTO items (id, stall_id, name, kind, parts_json, kg_co2e, low_carbon, points, status) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, 'draft')").bind(x.id, x.stall_id, x.name, x.kind, x.parts_json, x.kg_co2e, x.low_carbon)));

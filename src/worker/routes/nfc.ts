@@ -36,6 +36,8 @@ nfc.post("/tap", student, async (c) => {
   const tok = (await loadToken(db, pending.id))!;
   const block = await claimBlocker(db, tok, uid, now, await loadSettings(db));
   if (block) return fail(c, ...block);
+  // One pending tap per student: tapping here lets go of a tap at any other stall.
+  await db.prepare("UPDATE tokens SET pending_user_id = NULL WHERE pending_user_id = ? AND used_at IS NULL AND stall_id != ?").bind(uid, stall.id).run();
   const upd = await db.prepare("UPDATE tokens SET pending_user_id = ? WHERE id = ? AND pending_user_id IS NULL AND used_at IS NULL").bind(uid, tok.id).run();
   if (upd.meta.changes !== 1) return fail(c, 409, "taken", "Someone else tapped first. Ask the seller to tap the item again.");
   return c.json({ token_id: tok.id, stall_name: tok.stall_name, item_name: tok.item_name }, 201);
@@ -45,7 +47,8 @@ nfc.get("/tap/:id", student, async (c) => {
   const db = c.env.DB;
   const uid = c.get("user")!.id;
   const tok = await loadToken(db, c.req.param("id"));
-  if (!tok || tok.pending_user_id !== uid) return fail(c, 404, "no_token", "Tap not found.");
+  if (!tok) return fail(c, 404, "no_token", "Tap not found.");
+  if (tok.pending_user_id !== uid && tok.used_by !== uid) return fail(c, 404, "cleared", "The seller cleared this tap. Tap the sticker again.");
   const base = { stall_name: tok.stall_name, item_name: tok.item_name };
   if (tok.used_at != null && tok.used_by === uid) {
     const { results } = await db.prepare("SELECT type, points, kg_co2e FROM activities WHERE token_id = ? AND user_id = ?").bind(tok.id, uid).all<{ type: string; points: number; kg_co2e: number | null }>();
@@ -61,13 +64,23 @@ nfc.post("/stall/tokens/:id/confirm", seller, async (c) => {
   const tok = await loadToken(db, c.req.param("id"));
   if (!tok || tok.stall_id !== c.get("user")!.stall_id) return fail(c, 404, "no_token", "Code not found.");
   if (tok.method !== "nfc") return fail(c, 400, "not_nfc", "This code is a QR code; the customer scans it.");
+  if (tok.verify_method === "qr") return fail(c, 400, "method_off", "This stall now uses QR codes. Close this and show a code.");
   if (!tok.pending_user_id) return fail(c, 409, "not_tapped", "No one has tapped the sticker yet.");
   const now = Date.now();
   const s = await loadSettings(db);
   const block = await claimBlocker(db, tok, tok.pending_user_id, now, s);
   if (block) return fail(c, ...block);
   const result = await award(db, tok, tok.pending_user_id, now, s, "nfc");
-  if (!result) return fail(c, 409, "used", "Already confirmed.");
+  if (Array.isArray(result)) return fail(c, ...result);
   const who = await db.prepare("SELECT display_name FROM users WHERE id = ?").bind(tok.pending_user_id).first<string>("display_name");
   return c.json({ claimed_by: who, points: result.points });
+});
+
+/** The seller saw the wrong name: free the token so the customer in front of them can tap. */
+nfc.post("/stall/tokens/:id/clear", seller, async (c) => {
+  const db = c.env.DB;
+  const tok = await loadToken(db, c.req.param("id"));
+  if (!tok || tok.stall_id !== c.get("user")!.stall_id) return fail(c, 404, "no_token", "Code not found.");
+  await db.prepare("UPDATE tokens SET pending_user_id = NULL WHERE id = ? AND used_at IS NULL").bind(tok.id).run();
+  return c.json({ cleared: true });
 });

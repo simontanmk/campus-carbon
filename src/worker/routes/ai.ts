@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import type { AppEnv } from "../env";
 import { fail, readBody } from "../http";
-import { aiJson } from "../lib/ai";
+import { aiJson, aiLive } from "../lib/ai";
 import { cleanParts, MEAL_PROMPT, mockMeal, mockNudge, mockTrip, NUDGE_PROMPT, TRIP_PROMPT, validateMeal, validateNudge, validateTrip } from "../lib/ai-tasks";
 import { requireRole } from "../session";
 import { insertCapped } from "../activities";
@@ -11,7 +11,8 @@ import { computeKg, isLowCarbonMeal, type FactorTable, type Parts } from "../lib
 import { decodeImage } from "../image";
 import { sign, verify } from "../lib/token";
 import { weekFacts } from "../facts";
-import { sgWeekStart } from "../lib/time";
+import { sgDayStart, sgWeekStart } from "../lib/time";
+import type { Context } from "hono";
 
 export const ai = new Hono<AppEnv>();
 const photoLimit = bodyLimit({
@@ -19,11 +20,25 @@ const photoLimit = bodyLimit({
   onError: (c) => c.json({ error: "too_large", message: "That photo is too large. Try again; the app shrinks photos first." }, 413),
 });
 const student = requireRole("student");
+const AI_LIMIT = "You've used today's AI help. Pick from the lists, or try again tomorrow.";
+
+/** Takes one of the student's live AI calls for today (spec: protect the free Gemini quota). False when used up. */
+async function takeAiCall(c: Context<AppEnv>): Promise<boolean> {
+  if (!aiLive(c.env)) return true;
+  const now = Date.now();
+  const s = await loadSettings(c.env.DB);
+  const r = await c.env.DB
+    .prepare("INSERT INTO ai_calls (user_id, created_at) SELECT ?1, ?2 WHERE (SELECT COUNT(*) FROM ai_calls WHERE user_id = ?1 AND created_at >= ?3) < ?4")
+    .bind(c.get("user")!.id, now, sgDayStart(now), s.ai_daily_max)
+    .run();
+  return r.meta.changes === 1;
+}
 
 ai.post("/trips/parse", student, async (c) => {
   const body = await readBody(c);
   const text = typeof body.text === "string" ? body.text.trim() : "";
   if (text.length < 1 || text.length > 200) return fail(c, 400, "invalid_text", "Type where you went, up to 200 characters.");
+  if (!(await takeAiCall(c))) return fail(c, 429, "ai_limit", AI_LIMIT);
   const { results: places } = await c.env.DB.prepare("SELECT id, name FROM locations ORDER BY name").all<{ id: string; name: string }>();
   const r = await aiJson(
     c.env,
@@ -60,6 +75,7 @@ ai.post("/meals/photo", photoLimit, student, async (c) => {
   const img = await decodeImage((await readBody(c)).image);
   if ("error" in img) return fail(c, 400, "invalid_image", "Take a JPEG, PNG or WebP photo under 1.5 MB.");
   if (await hashUsed(db, img.hash)) return fail(c, 409, "duplicate_photo", "This photo has already been logged.");
+  if (!(await takeAiCall(c))) return fail(c, 429, "ai_limit", "You've used today's AI photo checks. Scan the stall's code instead, or try again tomorrow.");
   const r = await aiJson(c.env, { instructions: MEAL_PROMPT, text: "What is this meal?", image: { mime: img.mime, base64: img.base64 } }, validateMeal, mockMeal, c.env.AI_FETCH);
   const [factors, s] = await Promise.all([factorTable(db), loadSettings(db)]);
   const a = assess(r.value.parts, factors);
@@ -110,7 +126,9 @@ ai.get("/me/nudge", student, async (c) => {
   const cached = await db.prepare("SELECT text FROM summaries WHERE user_id = ? AND week_start = ?").bind(uid, weekStart).first<{ text: string }>();
   if (cached) return c.json({ text: cached.text, source: "live" });
   const facts = await weekFacts(db, uid, now);
-  const r = await aiJson(c.env, { instructions: NUDGE_PROMPT, text: JSON.stringify(facts) }, validateNudge, () => mockNudge(facts), c.env.AI_FETCH);
+  const r = (await takeAiCall(c))
+    ? await aiJson(c.env, { instructions: NUDGE_PROMPT, text: JSON.stringify(facts) }, validateNudge, () => mockNudge(facts), c.env.AI_FETCH)
+    : { value: mockNudge(facts), source: "mock" as const };
   // An empty week's sentence would be stale after the first log, so only cache weeks with activity.
   if (r.source === "live" && (facts.meals_week > 0 || facts.week_kg > 0)) {
     await db.prepare("INSERT INTO summaries (user_id, week_start, text, created_at) VALUES (?, ?, ?, ?) ON CONFLICT(user_id, week_start) DO NOTHING")

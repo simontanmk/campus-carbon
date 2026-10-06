@@ -8,9 +8,12 @@ type Metric = "low_carbon_meals" | "steps" | "byo" | "walk_trips" | "all_weekly"
 type Period = "daily" | "weekly";
 export type Mission = { id: string; name: string; category: string; metric: Metric; target: number; points: number; period: Period };
 export type MissionState = Mission & { progress: number; completed: boolean };
-/** Admin overrides of mission rewards, by mission id (settings `mission_points_<id>`). */
-export type MissionPoints = Record<string, number>;
-const withPoints = (p?: MissionPoints) => (p ? MISSIONS.map((m) => (p[m.id] != null ? { ...m, points: p[m.id] } : m)) : MISSIONS);
+/** Admin overrides of mission rewards by mission id: fixed, or per SGT week (a change applies from the week it was made). */
+export type MissionPoints = Record<string, number> | ((weekStart: number) => Record<string, number>);
+const withPoints = (p: MissionPoints | undefined, weekStart: number) => {
+  const o = typeof p === "function" ? p(weekStart) : p;
+  return o ? MISSIONS.map((m) => (o[m.id] != null ? { ...m, points: o[m.id] } : m)) : MISSIONS;
+};
 
 export const MISSIONS: Mission[] = [
   { id: "daily-low-meal", name: "Eat one low-carbon meal today", category: "food", metric: "low_carbon_meals", target: 1, points: 20, period: "daily" },
@@ -53,9 +56,9 @@ function statesFor(period: Period, acts: Act[], missions: Mission[] = MISSIONS):
 }
 
 export function currentMissions(acts: Act[], now: number, points?: MissionPoints): { daily: MissionState[]; weekly: MissionState[] } {
-  const list = withPoints(points);
   const day = sgDayStart(now);
   const week = sgWeekStart(now);
+  const list = withPoints(points, week);
   return {
     daily: statesFor("daily", acts.filter((a) => a.created_at >= day && a.created_at <= now), list),
     weekly: statesFor("weekly", acts.filter((a) => a.created_at >= week && a.created_at <= now), list),
@@ -64,17 +67,18 @@ export function currentMissions(acts: Act[], now: number, points?: MissionPoints
 
 /** Bonus points for every daily and weekly period that has activity in [from, to). */
 export function missionPoints(acts: Act[], from: number, to: number, points?: MissionPoints): number {
-  const list = withPoints(points);
   const inRange = acts.filter((a) => a.created_at >= from && a.created_at < to);
   let total = 0;
   for (const [period, keyOf] of [["daily", sgDayStart], ["weekly", sgWeekStart]] as const) {
     const groups = new Map<number, Act[]>();
     for (const a of inRange) {
       const k = keyOf(a.created_at);
-      groups.set(k, [...(groups.get(k) ?? []), a]);
+      const g = groups.get(k);
+      if (g) g.push(a);
+      else groups.set(k, [a]);
     }
-    for (const g of groups.values()) {
-      total += statesFor(period, g, list).reduce((n, s) => (s.completed ? n + s.points : n), 0);
+    for (const [k, g] of groups) {
+      total += statesFor(period, g, withPoints(points, sgWeekStart(k))).reduce((n, s) => (s.completed ? n + s.points : n), 0);
     }
   }
   return total;

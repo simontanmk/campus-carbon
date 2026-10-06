@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import { getCookie, setCookie } from "hono/cookie";
+import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { createMiddleware } from "hono/factory";
 import type { AppEnv, Role, User } from "./env";
 import { fail } from "./http";
@@ -34,8 +34,13 @@ export async function startSession(c: Context<AppEnv>, userId: string) {
   setCookie(c, "uid", await sign(userId, c.env.COOKIE_SECRET), COOKIE_OPTS);
 }
 
+/** Persona switching on a shared demo device: kept for one working day, then the admin signs in again. */
 export async function rememberAdmin(c: Context<AppEnv>, adminId: string) {
-  setCookie(c, "adm", await sign(adminId, c.env.COOKIE_SECRET), COOKIE_OPTS);
+  setCookie(c, "adm", await sign(adminId, c.env.COOKIE_SECRET), { ...COOKIE_OPTS, maxAge: 60 * 60 * 12 });
+}
+
+export function forgetAdmin(c: Context<AppEnv>) {
+  deleteCookie(c, "adm", { path: "/", secure: true });
 }
 
 export function requireRole(...roles: Role[]) {
