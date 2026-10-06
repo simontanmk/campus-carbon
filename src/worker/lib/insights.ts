@@ -8,6 +8,8 @@ export type InsightAct = {
   user_id: string; created_at: number; type: string; source: string; verified: number; low_carbon: number | null;
   kg_co2e: number | null; stall_id: string | null; item_name: string | null; detail: Record<string, unknown>;
 };
+/** The fields kg-saved and meal counts need; recap passes plain activity rows. */
+export type MealLike = Pick<InsightAct, "type" | "verified" | "low_carbon" | "kg_co2e">;
 export type Stats = { meals: number; low_carbon_share: number | null; avg_kg: number | null; byo: number };
 export type MenuItemKg = { kind: string; status: string; kg_co2e: number | null; stall_active: number };
 export type BudgetRow = { user_id: string; user_created_at: number; created_at: number; category: "food" | "mobility" | "waste"; kg_co2e: number | null };
@@ -27,7 +29,7 @@ const r1 = (x: number) => Math.round(x * 10) / 10;
 const r2 = (x: number) => Math.round(x * 100) / 100;
 const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
 const inRange = (acts: InsightAct[], from: number, to: number) => acts.filter((a) => a.created_at >= from && a.created_at < to);
-const verifiedMeals = (acts: InsightAct[]) => acts.filter((a) => a.type === "meal" && a.verified === 1);
+const verifiedMeals = <T extends MealLike>(acts: T[]) => acts.filter((a) => a.type === "meal" && a.verified === 1);
 
 /** The current SGT week and the n−1 before it, oldest first. */
 export function weekStarts(now: number, n = WEEKS): number[] {
@@ -47,7 +49,7 @@ export function averageMealKg(items: MenuItemKg[]): number | null {
 }
 
 /** Estimated kg saved: each verified low-carbon meal vs the average campus meal, never below zero. */
-export function kgSaved(acts: InsightAct[], avg: number | null): number {
+export function kgSaved(acts: MealLike[], avg: number | null): number {
   if (avg == null) return 0;
   return r1(verifiedMeals(acts).reduce((n, a) => (a.low_carbon === 1 && a.kg_co2e != null ? n + Math.max(0, avg - a.kg_co2e) : n), 0));
 }
