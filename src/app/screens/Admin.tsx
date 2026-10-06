@@ -38,6 +38,7 @@ export function Admin({ isAdmin }: { isAdmin: boolean }) {
           <button className="btn btn-secondary" onClick={() => navigate("/admin/stalls")}>Stalls and items</button>
           <button className="btn btn-secondary" onClick={() => navigate("/admin/menu")}>Import a menu from a photo</button>
           <button className="btn btn-secondary" onClick={() => navigate("/admin/settings")}>Points and limits</button>
+          <button className="btn btn-secondary" onClick={() => navigate("/admin/insights")}>Insights</button>
           <a className="btn btn-secondary" style={{ textAlign: "center", textDecoration: "none" }} href="/api/admin/export.csv" download>Export activities (CSV)</a>
         </div>
       )}

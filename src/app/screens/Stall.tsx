@@ -1,6 +1,7 @@
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../api";
+import { pct } from "../copy";
 
 type Item = { id: string; name: string; kind: string; kg_co2e: number | null; low_carbon: boolean };
 type StallData = { stall: { id: string; name: string; canteen: string; active: boolean; verify_method: "qr" | "nfc" | "both" }; items: Item[] };
@@ -13,6 +14,7 @@ export function Stall() {
   const [byo, setByo] = useState(false);
   const [active, setActive] = useState<(Created & { item: Item; qr: string; local_expires_at: number }) | null>(null);
   const [mode, setMode] = useState<"qr" | "nfc">("qr");
+  const [refresh, setRefresh] = useState(0);
 
   useEffect(() => {
     api<StallData>("/stall").then(setData).catch((e) => setError(e instanceof ApiError ? e.message : "Couldn't load stall."));
@@ -35,6 +37,7 @@ export function Stall() {
 
   function close() {
     setActive(null);
+    setRefresh((r) => r + 1);
     setByo(false);
   }
 
@@ -47,6 +50,7 @@ export function Stall() {
         <div className="eyebrow">{data.stall.canteen}</div>
         <h1 className="display" style={{ marginTop: 8 }}>{data.stall.name}</h1>
       </div>
+      <StallWeek refresh={refresh} />
       <label className="toggle-row">
         <span>Own cup or container</span>
         <span className="switch">
@@ -193,6 +197,33 @@ function QrSheet({
           </>
         )}
         <button className="btn btn-secondary" onClick={onClose}>Close</button>
+      </div>
+    </div>
+  );
+}
+
+type WeekStats = { meals: number; low_carbon_share: number | null; avg_kg: number | null; byo: number };
+
+function StallWeek({ refresh }: { refresh: number }) {
+  const [d, setD] = useState<{ this_week: WeekStats; last_week: WeekStats } | null>(null);
+  useEffect(() => {
+    api<{ this_week: WeekStats; last_week: WeekStats }>("/stall/insights").then(setD).catch(() => {});
+  }, [refresh]);
+  if (!d) return null;
+  const cell = (n: string, label: string, last: string) => (
+    <div>
+      <div className="num" style={{ fontSize: 24 }}>{n}</div>
+      <div className="label">{label}</div>
+      <div className="label">last week: {last}</div>
+    </div>
+  );
+  return (
+    <div className="panel">
+      <div className="eyebrow" style={{ marginBottom: 10 }}>Your stall this week</div>
+      <div className="figures">
+        {cell(String(d.this_week.meals), "meals claimed", String(d.last_week.meals))}
+        {cell(pct(d.this_week.low_carbon_share), "low-carbon", pct(d.last_week.low_carbon_share))}
+        {cell(String(d.this_week.byo), "own containers", String(d.last_week.byo))}
       </div>
     </div>
   );

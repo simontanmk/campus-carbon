@@ -9,6 +9,7 @@ import { Admin } from "./screens/Admin";
 import { MenuImport } from "./screens/MenuImport";
 import { AdminStalls } from "./screens/AdminStalls";
 import { AdminSettings } from "./screens/AdminSettings";
+import { AdminInsights } from "./screens/AdminInsights";
 import { Welcome } from "./screens/Welcome";
 import { Impact } from "./screens/Impact";
 import { Log } from "./screens/Log";
@@ -46,6 +47,7 @@ export function App() {
       {path === "/admin/menu" && role === "admin" && <MenuImport />}
       {path === "/admin/stalls" && role === "admin" && <AdminStalls />}
       {path === "/admin/settings" && role === "admin" && <AdminSettings />}
+      {path === "/admin/insights" && role === "admin" && <AdminInsights />}
       {path === "/admin" && me.can_switch && <Admin isAdmin={role === "admin"} />}
       {((path.startsWith("/admin/") && role !== "admin") || (path === "/admin" && !me.can_switch)) && (
         <div className="result">
