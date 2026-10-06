@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../api";
 import type { RecapData } from "../copy";
+import { latestOnly } from "../latest";
 import { drawRecap } from "../recapImage";
 import { navigate } from "../router";
 
@@ -11,23 +12,26 @@ export function Recap() {
   const [data, setData] = useState<RecapData | null>(null);
   const [png, setPng] = useState<{ blob: Blob; url: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [latest] = useState(latestOnly); // a slow answer for an earlier choice must not replace the week picked since
 
   const load = (w: Week) => api<RecapData>(`/me/recap?week=${w}`);
 
   // Open on last week; a student with nothing last week (first week) opens on this week.
   useEffect(() => {
-    (async () => {
-      const last = await load("last");
-      if (!last.empty) return [last, "last"] as const;
-      const cur = await load("this");
-      return cur.empty ? ([last, "last"] as const) : ([cur, "this"] as const);
-    })()
+    latest(
+      (async () => {
+        const last = await load("last");
+        if (!last.empty) return [last, "last"] as const;
+        const cur = await load("this");
+        return cur.empty ? ([last, "last"] as const) : ([cur, "this"] as const);
+      })(),
+    )
       .then(([d, w]) => {
         setData(d);
         setWeek(w);
       })
       .catch((e) => setError(e instanceof ApiError ? e.message : "Couldn't load your week."));
-  }, []);
+  }, [latest]);
 
   useEffect(() => {
     setPng(null);
@@ -48,13 +52,16 @@ export function Recap() {
   }, [data]);
 
   async function pick(w: Week) {
-    if (w === week) return;
+    if (w === week && !error) return;
+    const prev = week;
     setWeek(w);
     setError(null);
+    setData(null); // hide the previous card so Share can't send the wrong week while this one loads
     try {
-      setData(await load(w));
+      setData(await latest(load(w)));
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Couldn't load your week.");
+      setWeek(prev);
     }
   }
 
