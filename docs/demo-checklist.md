@@ -31,6 +31,7 @@ Student devices: one iPhone, one Android.
   - [ ] Wrong name on the seller's sheet → "Not them?" → sheet goes back to waiting; the other phone says "tap the sticker again"
   - [ ] Confirm latency is in the export: `confirm_latency_ms` (seller item tap → Confirm), on rows with source `nfc`
 - [ ] Projector: open /impact on the presentation laptop (no login needed) → big "kg saved" number, 8-week bars, QR in the corner; claim a meal on a phone → within 30 s the numbers move
+- [ ] Recap card: Today → "Your week in review" → Share → Instagram Story (iPhone and Android) shows the 1080×1920 card; WhatsApp sends it as an image; on a laptop the button is Download
 - [ ] Admin → Insights shows each stall this week vs last week; a seller sees "Your stall this week" above the menu
 - [ ] Admin → Export activities (CSV) opens in a spreadsheet; verified and source columns present
 - [ ] Before handing a switched phone to someone, open Switch → "Stop switching on this device"

@@ -251,6 +251,7 @@ Known limitation: a student stays under budget by not logging. Accepted for the 
 
 Implemented: Stalls and items (active, verify method, NFC sticker link, edit and add items with ingredients in grams, approve and hide), Points and limits (all settings, including mission rewards), CSV export, menu photo import. Admin tools need the real admin role. A switched persona sees only the persona list.
 - **Campus impact** (`/impact`, public) and **Insights** (`/admin/insights`; seller panel on the stall screen): see `2026-10-06-insights-and-impact-design.md`.
+- **Weekly recap card** (`/recap`, students): see `2026-10-07-weekly-recap-card-design.md`.
 
 ## 12. Visual design
 
