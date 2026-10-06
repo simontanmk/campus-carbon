@@ -470,6 +470,7 @@ git commit -m "feat(recap): /api/me/recap and recap_ready on Today"
 - Create: `src/app/screens/Recap.tsx`
 - Modify: `src/app/App.tsx`
 - Modify: `src/app/screens/Home.tsx`
+- Modify: `src/app/screens/Impact.tsx` (link back to the app)
 
 **Interfaces:**
 - Consumes:
@@ -767,6 +768,24 @@ In `src/app/screens/Home.tsx`:
       )}
 ```
 
+Also link Today to the campus impact page (user request, 2026-10-07):
+
+1. In `src/app/screens/Home.tsx`, at the end of the main view (after the recent-activity `.list` div), add:
+
+   ```tsx
+         <button className="link-btn" style={{ alignSelf: "center" }} onClick={() => navigate("/impact")}>See campus impact ›</button>
+   ```
+
+2. Add the same button at the end of `FirstVisit`'s returned fragment, after the "For stalls without a code" paragraph.
+
+3. In `src/app/screens/Impact.tsx`, inside `.impact-foot`'s first `<div>`, after the "NTU CC0006 pilot · updated" line, add a way back for students who came from Today. On the projector it stays small:
+
+   ```tsx
+             <button className="link-btn" style={{ marginTop: 8 }} onClick={() => navigate("/")}>Open Campus Carbon</button>
+   ```
+
+   Add `import { navigate } from "../router";` to `Impact.tsx`.
+
 - [ ] **Step 6: Check it in the browser**
 
 1. `npm run typecheck && npx vitest run`. Expected: all pass.
@@ -776,12 +795,13 @@ In `src/app/screens/Home.tsx`:
 3. Run `javascript_tool`: `const i=document.querySelector('img[alt^="Your week"]'); [i.naturalWidth, i.naturalHeight]`. Expected: `[1080, 1920]`.
 4. Tap "This week so far". Expected: the card redraws, or "Nothing logged that week."
 5. Desktop pane: `navigator.canShare` with files is normally false here. Expected: only Download shows (Review Focus 5).
-6. Read the preview text lines: the eyebrow, "Bea · …", the headline, the panels, the footnote and the QR code. Nothing should run off the right edge (Review Focus 4).
+6. Today → "See campus impact ›" opens `/impact`, and "Open Campus Carbon" there returns to Today.
+7. Read the preview text lines: the eyebrow, "Bea · …", the headline, the panels, the footnote and the QR code. Nothing should run off the right edge (Review Focus 4).
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/app/copy.ts test/copy.test.ts src/app/recapImage.ts src/app/screens/Recap.tsx src/app/App.tsx src/app/screens/Home.tsx
+git add src/app/copy.ts test/copy.test.ts src/app/recapImage.ts src/app/screens/Recap.tsx src/app/App.tsx src/app/screens/Home.tsx src/app/screens/Impact.tsx
 git commit -m "feat(app): weekly recap card with share and download"
 ```
 
