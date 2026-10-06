@@ -27,10 +27,15 @@ export function Log() {
 
   useEffect(() => {
     setOpts(null);
+    setError(null);
     if (!from || !to || from === to) return;
+    let stale = false; // a slower answer for an earlier pair must not replace this one
     api<Options>(`/trips/options?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)
-      .then(setOpts)
-      .catch((e) => setError(e instanceof ApiError ? e.message : "Couldn't load options."));
+      .then((o) => !stale && setOpts(o))
+      .catch((e) => !stale && setError(e instanceof ApiError ? e.message : "Couldn't load options."));
+    return () => {
+      stale = true;
+    };
   }, [from, to]);
 
   async function run(fn: () => Promise<string>) {
@@ -104,7 +109,7 @@ export function Log() {
                 disabled={busy}
                 onClick={() =>
                   run(async () => {
-                    const r = await api<{ points: number; capped: boolean }>("/trips", { from_id: from, to_id: to, mode: o.mode });
+                    const r = await api<{ points: number; capped: boolean }>("/trips", { from_id: opts.from.id, to_id: opts.to.id, mode: o.mode });
                     setFrom("");
                     setTo("");
                     return `${MODE[o.mode]} logged ${pts(r.points, r.capped)}`;

@@ -53,6 +53,7 @@ Hono is a small routing library for Workers: it maps URLs such as `POST /api/cla
 - `users.role` is `student`, `seller` (bound to one `stall_id`) or `admin`.
 - Sellers and admins cannot claim tokens.
 - Admins get a **persona switcher** so one device can act as any seeded user during the demo.
+  - The switch capability (`adm` cookie) lasts 12 hours. "Stop switching on this device" drops it and keeps the current persona, for handing a phone to someone else.
 - `email` and `email_verified_at` exist in the schema but are unused. A later pilot adds "verify your NTU email" without a data migration.
 
 Known limitation: clearing cookies creates a fresh account, which bypasses per-student rate limits. Accepted for the demo.
@@ -91,6 +92,8 @@ A null `kg_co2e` (e.g. Teh-O kosong, pending mobility factors) means "not estima
 ## 7. Scoring
 
 All values live in `settings` and can be edited in admin.
+- Minimums: code lifetime ≥ 15 s, daily claim limit ≥ 1, AI calls per day ≥ 1. Lower values would make codes expire at once or block every claim.
+- Mission rewards live in `mission_points` (mission, effective week, points). A new reward applies from the SGT week it is saved, so past weeks' totals and last week's Carbon Champion don't change. The seeded `missions.points` column is only the default.
 
 | Action | Verified | Points |
 |---|---|---|
@@ -143,6 +146,11 @@ A static NFC sticker holds `https://<app>/tap?stall=<id>`. It uses the phone's b
 4. Confirm latency (`confirmed_at − created_at`) is kept for measuring seller workload.
 
 Implemented: the seller's sheet shows the tapping student's name with Confirm. The student's page waits and shows the points after Confirm. Rate limits are checked at tap and again at Confirm. A new NFC token at a stall expires the previous pending one.
+- **Wrong tapper:** "Not them?" on the seller's sheet clears the tap, so the customer in front of the seller can tap; the cleared student is told to tap again.
+- A student holds one pending tap at a time. Tapping another stall releases the first, so one person can't hold several stalls' tokens.
+- Confirm is refused if the stall has since been set to QR only.
+- The per-stall window and the daily limit are checked again inside the single `UPDATE` that marks a token used (QR and NFC), so two codes claimed at the same moment can't both pass.
+- The seller's countdown runs from the server's remaining time (`expires_at − server_now`), not the device clock. Tapping outside the sheet closes it only once the code is claimed or expired.
 
 Device testing (iPhone background reading, sticker placement near metal) is left to the team.
 
@@ -151,6 +159,8 @@ Choose origin and destination (dropdowns, or typed text via AI §9.2). The app l
 - walk: 0 kg
 - shuttle: `distance_km × factor(shuttle)`
 - car/Grab: `distance_km × factor(car)`
+
+Assumption: shuttle and car kg use the walking distance between the two places (the only distance stored). The OSRM driving route is usually a little longer, so shuttle and car kg are slightly understated. State this in the proposal.
 
 Each option shows its time and points. A pending factor shows "factor pending". Tapping an option logs a self-reported trip.
 
@@ -194,6 +204,10 @@ On error, timeout (8 s) or a schema mismatch, the client returns the mock respon
    - The student confirms or edits, then it is logged `verified=false, source=photo`. It earns +5 if low-carbon and counts toward the daily cap.
    - A SHA-256 of the image file goes into `image_hash`. Duplicates are rejected.
 4. **Weekly summary and nudge.** The `budget` module computes the facts. The AI writes 2–3 sentences using only those facts. Mock mode uses a template. Cached in `summaries` per user per week.
+
+**Per-student AI limit.** Each student gets `ai_daily_max` (default 20, editable in admin) live AI calls per SGT day across typed trips, meal photos and nudges, recorded in `ai_calls`. Over the limit, typed trips and meal photos return a plain message (pick from the lists, or scan the stall's code), and the nudge uses the offline sentence. Nothing is counted when no live model is configured.
+
+**Menu import with the AI offline** returns "try again" and writes nothing. The offline stand-in dishes are no longer saved as drafts.
 
 Privacy: images are never stored. The provider receives only images being analysed, typed trip text, and computed numbers with a display name.
 

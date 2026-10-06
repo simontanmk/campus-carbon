@@ -44,6 +44,15 @@ export function App() {
       {path === "/admin/stalls" && role === "admin" && <AdminStalls />}
       {path === "/admin/settings" && role === "admin" && <AdminSettings />}
       {path === "/admin" && me.can_switch && <Admin isAdmin={role === "admin"} />}
+      {((path.startsWith("/admin/") && role !== "admin") || (path === "/admin" && !me.can_switch)) && (
+        <div className="result">
+          <h1 className="title">Admins only</h1>
+          <p className="body">{me.can_switch ? "Switch back to the admin account to open this." : "This page is for the pilot team."}</p>
+          <div style={{ width: "100%", marginTop: 24 }}>
+            <button className="btn btn-secondary" onClick={() => navigate(me.can_switch ? "/admin" : "/")}>{me.can_switch ? "Switch persona" : "Go home"}</button>
+          </div>
+        </div>
+      )}
       {main && role === "seller" && <Stall />}
       {main && student && path === "/log" && <Log />}
       {main && student && path === "/missions" && <Missions />}

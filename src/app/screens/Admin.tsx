@@ -18,6 +18,15 @@ export function Admin({ isAdmin }: { isAdmin: boolean }) {
     }
   }
 
+  async function stopSwitching() {
+    try {
+      await api("/session/stop-switching", {});
+      location.href = "/";
+    } catch {
+      setError("Couldn't stop switching. Try again.");
+    }
+  }
+
   return (
     <>
       <div>
@@ -31,6 +40,12 @@ export function Admin({ isAdmin }: { isAdmin: boolean }) {
           <button className="btn btn-secondary" onClick={() => navigate("/admin/settings")}>Points and limits</button>
           <a className="btn btn-secondary" style={{ textAlign: "center", textDecoration: "none" }} href="/api/admin/export.csv" download>Export activities (CSV)</a>
         </div>
+      )}
+      {!isAdmin && (
+        <>
+          <button className="btn btn-secondary" onClick={stopSwitching}>Stop switching on this device</button>
+          <p className="muted" style={{ marginTop: -12 }}>Keeps you as the current persona. Do this before handing the phone to someone else.</p>
+        </>
       )}
       {error && <p className="error">{error}</p>}
       <div className="section-head">Switch persona</div>

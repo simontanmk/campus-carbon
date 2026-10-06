@@ -8,7 +8,7 @@ type Estimate = { dish: string; parts: Record<string, number>; kg_co2e: number |
  * Photo of a meal from a stall without a code: camera → AI estimate → confirm.
  * Self-contained so Today and Log can both offer it.
  */
-export function MealPhoto({ label = "Take a photo", primary = false, onLogged }: { label?: string; primary?: boolean; onLogged?: () => void }) {
+export function MealPhoto({ label = "Take a photo", primary = false, onLogged }: { label?: string; primary?: boolean; onLogged?: (message: string) => void }) {
   const [estimate, setEstimate] = useState<Estimate | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -79,9 +79,11 @@ export function MealPhoto({ label = "Take a photo", primary = false, onLogged }:
                 run(async () => {
                   const r = await api<{ points: number; capped: boolean }>("/meals/photo/confirm", { dish: estimate.dish, parts: estimate.parts, image_hash: estimate.image_hash, ticket: estimate.ticket });
                   setEstimate(null);
-                  onLogged?.();
                   const pts = r.capped ? (r.points > 0 ? `+${r.points}, daily limit reached` : "daily limit reached") : `+${r.points}`;
-                  return `Meal logged · ${pts}`;
+                  const message = `Meal logged · ${pts}`;
+                  if (!onLogged) return message;
+                  onLogged(message);
+                  return null;
                 })
               }
             >

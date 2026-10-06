@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api, ApiError } from "../api";
 
-export function Welcome({ onDone }: { onDone: () => void }) {
+export function Welcome({ onDone }: { onDone: () => Promise<unknown> }) {
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -12,7 +12,7 @@ export function Welcome({ onDone }: { onDone: () => void }) {
     setError(null);
     try {
       await api("/session", { display_name: name });
-      onDone();
+      await onDone();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong.");
       setBusy(false);

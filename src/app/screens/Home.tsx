@@ -27,9 +27,14 @@ export function Home({ user }: { user: User }) {
   const [data, setData] = useState<Summary | null>(null);
   const [failed, setFailed] = useState(false);
   const [nudge, setNudge] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const load = useCallback(() => {
     api<Summary>("/me/summary").then(setData).catch(() => setFailed(true));
   }, []);
+  const logged = useCallback((message: string) => {
+    setToast(message);
+    load();
+  }, [load]);
   useEffect(load, [load]);
   useEffect(() => {
     api<{ text: string }>("/me/nudge").then((n) => setNudge(n.text)).catch(() => {});
@@ -37,10 +42,12 @@ export function Home({ user }: { user: User }) {
 
   if (failed) return <p className="error">Couldn't load your week. Reload to try again.</p>;
   if (!data) return null;
-  if (data.recent.length === 0) return <FirstVisit user={user} data={data} onLogged={load} />;
+  const toastEl = toast && <div className="toast" role="status">{toast}</div>;
+  if (data.recent.length === 0) return <>{toastEl}<FirstVisit user={user} data={data} onLogged={logged} /></>;
 
   return (
     <>
+      {toastEl}
       <div>
         <div className="eyebrow">{today.format(new Date())}</div>
         <h1 className="display" style={{ marginTop: 8 }}>{weekHeadline(data)}</h1>
@@ -81,15 +88,14 @@ export function Home({ user }: { user: User }) {
         <p className="muted" style={{ marginTop: -8 }}>{budgetNote(data.budget)}</p>
       )}
 
-      <MealPhoto label="Snap a meal" primary onLogged={load} />
+      <MealPhoto label="Snap a meal" primary onLogged={logged} />
 
-      {nudge ? (
-        <p className="body" style={{ fontSize: 14 }}>{nudge}</p>
-      ) : data.swap ? (
-        <p className="body" style={{ fontSize: 14 }}>
+      {nudge && <p className="body" style={{ fontSize: 14 }}>{nudge}</p>}
+      {data.swap && (
+        <p className={nudge ? "muted" : "body"} style={{ fontSize: 14, marginTop: nudge ? -8 : undefined }}>
           Swap {shortName(data.swap.from).toLowerCase()} for {shortName(data.swap.to).toLowerCase()} to save {data.swap.saves_kg} kg next time.
         </p>
-      ) : null}
+      )}
 
       <div className="list" style={{ borderTop: "0.5px solid var(--line)" }}>
         {data.recent.slice(0, 3).map((a, i) => (
@@ -108,7 +114,7 @@ export function Home({ user }: { user: User }) {
   );
 }
 
-function FirstVisit({ user, data, onLogged }: { user: User; data: Summary; onLogged: () => void }) {
+function FirstVisit({ user, data, onLogged }: { user: User; data: Summary; onLogged: (message: string) => void }) {
   const { fact, featured } = data;
   return (
     <>

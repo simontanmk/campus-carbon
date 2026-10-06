@@ -25,7 +25,15 @@ export function Tap() {
 
   useEffect(() => {
     if (!tokenId || status?.state !== "waiting") return;
-    const t = setInterval(() => api<Status>(`/tap/${tokenId}`).then(setStatus).catch(() => {}), 2000);
+    const t = setInterval(
+      () =>
+        api<Status>(`/tap/${tokenId}`)
+          .then(setStatus)
+          .catch((e) => {
+            if (e instanceof ApiError && e.status === 404) setError(e.message); // the seller cleared this tap
+          }),
+      2000,
+    );
     return () => clearInterval(t);
   }, [tokenId, status?.state]);
 

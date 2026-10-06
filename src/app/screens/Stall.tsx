@@ -4,14 +4,14 @@ import { api, ApiError } from "../api";
 
 type Item = { id: string; name: string; kind: string; kg_co2e: number | null; low_carbon: boolean };
 type StallData = { stall: { id: string; name: string; canteen: string; active: boolean; verify_method: "qr" | "nfc" | "both" }; items: Item[] };
-type Created = { id: string; claim_url: string; expires_at: number; method: "qr" | "nfc" };
+type Created = { id: string; claim_url: string; expires_at: number; method: "qr" | "nfc"; server_now: number };
 type Status = { state: "pending" | "tapped" | "claimed" | "expired"; claimed_by: string | null; pending_name: string | null };
 
 export function Stall() {
   const [data, setData] = useState<StallData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [byo, setByo] = useState(false);
-  const [active, setActive] = useState<(Created & { item: Item; qr: string }) | null>(null);
+  const [active, setActive] = useState<(Created & { item: Item; qr: string; local_expires_at: number }) | null>(null);
   const [mode, setMode] = useState<"qr" | "nfc">("qr");
 
   useEffect(() => {
@@ -26,7 +26,8 @@ export function Stall() {
     try {
       const t = await api<Created>("/stall/tokens", { item_id: item.id, byo, method: mode });
       const qr = t.method === "qr" ? await QRCode.toDataURL(t.claim_url, { margin: 1, width: 560 }) : "";
-      setActive({ ...t, item, qr });
+      // Count down on this device's clock from the server's remaining time, so a skewed clock can't shift it.
+      setActive({ ...t, item, qr, local_expires_at: Date.now() + (t.expires_at - t.server_now) });
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Couldn't create a code.");
     }
@@ -83,7 +84,7 @@ function QrSheet({
   onClose,
   onRegenerate,
 }: {
-  active: Created & { item: Item; qr: string };
+  active: Created & { item: Item; qr: string; local_expires_at: number };
   byo: boolean;
   onClose: () => void;
   onRegenerate: () => void;
@@ -132,11 +133,27 @@ function QrSheet({
     }
   }
 
-  const secondsLeft = Math.max(0, Math.ceil((active.expires_at - now) / 1000));
+  const [clearing, setClearing] = useState(false);
+  async function clearTap() {
+    setClearing(true);
+    setConfirmError(null);
+    try {
+      await api(`/stall/tokens/${active.id}/clear`, {});
+      setStatus({ state: "pending", claimed_by: null, pending_name: null });
+    } catch {
+      setConfirmError("Couldn't clear. Close this and tap the item again.");
+    } finally {
+      setClearing(false);
+    }
+  }
+
+  const secondsLeft = Math.max(0, Math.ceil((active.local_expires_at - now) / 1000));
+  const seconds = <span style={{ fontVariantNumeric: "tabular-nums" }}>{secondsLeft}s</span>;
   const expired = status.state === "expired" || ((status.state === "pending" || status.state === "tapped") && secondsLeft === 0);
 
   return (
-    <div className="sheet-backdrop" onClick={status.state === "tapped" ? undefined : onClose}>
+    // Tapping outside only closes a finished sheet; a live code stays up until Close.
+    <div className="sheet-backdrop" onClick={status.state === "claimed" || expired ? onClose : undefined}>
       <div className="sheet glass" onClick={(e) => e.stopPropagation()}>
         <h2 className="title">{active.item.name}{byo ? " + own container" : ""}</h2>
         {status.state === "claimed" ? (
@@ -157,19 +174,22 @@ function QrSheet({
             <>
               <p className="body" style={{ color: "var(--text)" }}>{status.pending_name} tapped the sticker.</p>
               {confirmError && <p className="error">{confirmError}</p>}
-              <button className="btn" disabled={confirming} onClick={confirm}>Confirm</button>
-              <p className="muted">Only confirm if they're in front of you.</p>
+              <button className="btn" disabled={confirming || clearing} onClick={confirm}>Confirm</button>
+              <p className="muted">
+                Only confirm if they're in front of you · {seconds} ·{" "}
+                <button className="link-btn" disabled={clearing || confirming} onClick={clearTap}>Not them?</button>
+              </p>
             </>
           ) : (
             <>
               <div className="pulse"><span>Tap</span></div>
-              <p className="muted">Ask the customer to tap their phone on the sticker · <span style={{ fontVariantNumeric: "tabular-nums" }}>{secondsLeft}s</span></p>
+              <p className="muted">Ask the customer to tap their phone on the sticker · {seconds}</p>
             </>
           )
         ) : (
           <>
             <img src={active.qr} alt="Claim QR code" />
-            <p className="muted">Scan with your phone camera · <span style={{ fontVariantNumeric: "tabular-nums" }}>{secondsLeft}s</span></p>
+            <p className="muted">Scan with your phone camera · {seconds}</p>
           </>
         )}
         <button className="btn btn-secondary" onClick={onClose}>Close</button>

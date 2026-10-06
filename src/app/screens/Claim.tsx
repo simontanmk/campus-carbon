@@ -28,7 +28,7 @@ export function Claim() {
     history.replaceState(null, "", "/claim"); // a refresh must not retry a used token
     api<Result>("/claim", { t })
       .then(setResult)
-      .catch((e) => setError(e instanceof ApiError ? e.message : "Something went wrong. Please try again."));
+      .catch((e) => setError(e instanceof ApiError ? e.message : "Check your connection, then scan the code again. If your points already show on Today, you're done."));
   }, []);
 
   if (error) {
