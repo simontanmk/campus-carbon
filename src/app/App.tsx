@@ -12,6 +12,7 @@ import { AdminSettings } from "./screens/AdminSettings";
 import { AdminInsights } from "./screens/AdminInsights";
 import { Welcome } from "./screens/Welcome";
 import { Impact } from "./screens/Impact";
+import { Recap } from "./screens/Recap";
 import { Log } from "./screens/Log";
 import { Missions } from "./screens/Missions";
 import { Ranks } from "./screens/Ranks";
@@ -33,7 +34,7 @@ export function App() {
   const role = me.user.role;
 
   const student = role === "student";
-  const main = path !== "/claim" && path !== "/tap" && !path.startsWith("/admin");
+  const main = path !== "/claim" && path !== "/tap" && !(student && path === "/recap") && !path.startsWith("/admin");
   return (
     <div className={student && main ? "page has-tabs" : "page"}>
       {me.can_switch && path !== "/admin" && (
@@ -44,6 +45,7 @@ export function App() {
       )}
       {path === "/claim" && <Claim />}
       {path === "/tap" && <Tap />}
+      {path === "/recap" && student && <Recap />}
       {path === "/admin/menu" && role === "admin" && <MenuImport />}
       {path === "/admin/stalls" && role === "admin" && <AdminStalls />}
       {path === "/admin/settings" && role === "admin" && <AdminSettings />}

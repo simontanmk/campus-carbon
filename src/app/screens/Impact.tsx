@@ -2,6 +2,7 @@ import QRCode from "qrcode";
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import { pct, weekLabel } from "../copy";
+import { navigate } from "../router";
 
 type Week = { week_start: number; low_carbon_share: number | null; kg_saved: number };
 type ImpactData = {
@@ -57,6 +58,7 @@ export function Impact() {
         <div>
           <div className="title" style={{ fontSize: 18 }}>Campus Carbon</div>
           <div className="muted">NTU CC0006 pilot · updated {updated}</div>
+          <button className="link-btn" style={{ marginTop: 8 }} onClick={() => navigate("/")}>Open Campus Carbon</button>
         </div>
         {qr && <img src={qr} alt="QR code to open Campus Carbon" width={96} height={96} />}
       </div>

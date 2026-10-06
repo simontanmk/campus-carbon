@@ -85,3 +85,33 @@ export function formatParts(parts: Record<string, number>): string {
 }
 export const pct = (share: number | null): string => (share == null ? "—" : `${Math.round(share * 100)}%`);
 export const weekLabel = (ms: number): string => new Date(ms).toLocaleDateString("en-SG", { day: "numeric", month: "short", timeZone: "Asia/Singapore" });
+
+export type RecapData = {
+  week: "last" | "this"; week_start: number; week_end: number; first_name: string; empty: boolean; points: number;
+  verified_meals: number; low_carbon_meals: number; kg_saved: number; walk_trips: number; byo: number; streak: number;
+  rank: { rank: number; of: number } | null; under_budget_kg: number | null;
+};
+
+/** Everything the recap image says, decided here so it can be tested without a canvas. */
+export function recapLines(d: RecapData) {
+  const last = d.week === "last";
+  const range = last ? `${weekLabel(d.week_start)} – ${weekLabel(d.week_end - 1)}` : "this week so far";
+  return {
+    eyebrow: "CAMPUS CARBON",
+    title: `${d.first_name} · ${range}`,
+    headline: String(d.points),
+    headlineLabel: last ? "points last week" : "points so far",
+    panels: [
+      { value: `${d.low_carbon_meals} of ${d.verified_meals}`, label: "low-carbon meals" },
+      { value: `≈ ${d.kg_saved} kg`, label: "CO₂e saved (est.)" },
+      { value: String(d.walk_trips), label: d.walk_trips === 1 ? "walk" : "walks" },
+      { value: String(d.byo), label: "own cups and containers" },
+    ],
+    extras: [
+      d.streak >= 2 ? `${d.streak}-day streak` : null,
+      d.rank ? (last ? `#${d.rank.rank} of ${d.rank.of} last week` : `currently #${d.rank.rank} of ${d.rank.of}`) : null,
+      last && d.under_budget_kg != null ? `${d.under_budget_kg} kg under my budget` : null,
+    ].filter((x): x is string => x !== null),
+    footnote: "kg saved is an estimate vs an average campus meal",
+  };
+}

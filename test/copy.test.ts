@@ -120,3 +120,32 @@ describe("weekLabel", () => {
     expect(weekLabel(Date.UTC(2026, 9, 4, 16))).toBe("5 Oct");
   });
 });
+import { recapLines, type RecapData } from "../src/app/copy";
+describe("recapLines", () => {
+  const MON = Date.UTC(2026, 9, 4, 16); // 5 Oct 2026 00:00 SGT
+  const d: RecapData = {
+    week: "last", week_start: MON, week_end: MON + 7 * 86_400_000, first_name: "Simon", empty: false, points: 185,
+    verified_meals: 6, low_carbon_meals: 4, kg_saved: 2.3, walk_trips: 1, byo: 2, streak: 4, rank: { rank: 3, of: 24 }, under_budget_kg: 2.1,
+  };
+  it("lays out last week with dates, figures and every earned line", () => {
+    const l = recapLines(d);
+    expect(l.title).toBe("Simon · 5 Oct – 11 Oct");
+    expect(l.headline).toBe("185");
+    expect(l.headlineLabel).toBe("points last week");
+    expect(l.panels).toEqual([
+      { value: "4 of 6", label: "low-carbon meals" },
+      { value: "≈ 2.3 kg", label: "CO₂e saved (est.)" },
+      { value: "1", label: "walk" },
+      { value: "2", label: "own cups and containers" },
+    ]);
+    expect(l.extras).toEqual(["4-day streak", "#3 of 24 last week", "2.1 kg under my budget"]);
+  });
+  it("this week says so far and currently, and drops lines that don't apply", () => {
+    const l = recapLines({ ...d, week: "this", streak: 1, rank: null, under_budget_kg: null, walk_trips: 3 });
+    expect(l.title).toBe("Simon · this week so far");
+    expect(l.headlineLabel).toBe("points so far");
+    expect(l.panels[2]).toEqual({ value: "3", label: "walks" });
+    expect(l.extras).toEqual([]);
+    expect(recapLines({ ...d, week: "this" }).extras).toContain("currently #3 of 24");
+  });
+});
