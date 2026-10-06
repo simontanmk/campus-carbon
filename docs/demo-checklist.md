@@ -30,6 +30,8 @@ Student devices: one iPhone, one Android.
   - [ ] Android with NFC on: same flow
   - [ ] Wrong name on the seller's sheet → "Not them?" → sheet goes back to waiting; the other phone says "tap the sticker again"
   - [ ] Confirm latency is in the export: `confirm_latency_ms` (seller item tap → Confirm), on rows with source `nfc`
+- [ ] Projector: open /impact on the presentation laptop (no login needed) → big "kg saved" number, 8-week bars, QR in the corner; claim a meal on a phone → within 30 s the numbers move
+- [ ] Admin → Insights shows each stall this week vs last week; a seller sees "Your stall this week" above the menu
 - [ ] Admin → Export activities (CSV) opens in a spreadsheet; verified and source columns present
 - [ ] Before handing a switched phone to someone, open Switch → "Stop switching on this device"
 - [ ] Each student has 20 live AI calls a day (Points and limits → ai_daily_max); raise it for heavy rehearsals
