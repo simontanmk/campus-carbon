@@ -38,7 +38,9 @@ Success means:
 - **Spent:** the sum of `cost` over the student's redemptions that are `redeemed`, or `pending` and not yet expired.
 - **Balance = earned − spent.**
   - It never goes below 0, because issuing a code is atomic (§6.1).
-  - Earned only grows, since activities are never deleted. A balance checked against a slightly stale earned figure therefore never over-spends.
+  - Earned can drop in one case: an admin lowering a mission reward applies from the start of the current week (main spec §7), which can lower this week's bonuses.
+  - Spending stays safe, because issuing a code checks `earned − spent ≥ cost` inside the INSERT. A student whose earned falls below what they've already spent shows a balance of 0, and new points refill that gap first.
+  - The Rewards tab says so: "Your points were adjusted, so new points refill your balance first."
 - **Ranks, Today's points and missions are unchanged.** Spending only lowers the balance.
 
 ## 4. Data (migration `0004_rewards.sql`)

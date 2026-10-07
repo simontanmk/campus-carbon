@@ -2,12 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api";
 import { mmss, redeemBlock, showCode } from "../copy";
 
-type Reward = { id: string; name: string; cost: number; stall_name: string | null; left_this_week: number | null; affordable: boolean };
-type Active = { id: string; code: string; reward_name: string; cost: number; expires_at: number; server_now: number };
-type Data = {
-  balance: number; earned: number; spent: number; rewards: Reward[]; active: Active | null;
-  history: { reward_name: string; cost: number; redeemed_at: number; stall_name: string | null }[];
-};
+import { withIssued, type Active, type Reward, type RewardsData as Data } from "../rewardsState";
 
 const day = (ms: number) => new Date(ms).toLocaleDateString("en-SG", { day: "numeric", month: "short", timeZone: "Asia/Singapore" });
 
@@ -27,10 +22,13 @@ export function Rewards() {
     setError(null);
     setDone(null);
     try {
-      await api(`/rewards/${r.id}/redeem`, {});
-      await load();
+      // Show the code from the response itself, so a failed reload can't hide a held code at the counter.
+      const a = await api<Active>(`/rewards/${r.id}/redeem`, {});
+      setD((cur) => (cur ? withIssued(cur, a, r.id) : cur));
+      load();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Couldn't make a code. Try again.");
+      load(); // an existing code (already_pending) appears, and stock or balance refresh
     } finally {
       inFlight.current = false;
     }
@@ -44,6 +42,7 @@ export function Rewards() {
         <div className="num-xl" style={{ marginTop: 8 }}>{d.balance}</div>
         <div className="label">points to spend</div>
         <p className="muted" style={{ marginTop: 8 }}>Earned {d.earned} · spent {d.spent}. Spending doesn't change your rank.</p>
+        {d.spent > d.earned && <p className="muted">Your points were adjusted, so new points refill your balance first.</p>}
       </div>
       {done && <div className="toast" role="status">{done}</div>}
       {error && <p className="error">{error}</p>}
