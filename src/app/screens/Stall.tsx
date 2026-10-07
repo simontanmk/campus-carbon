@@ -17,6 +17,7 @@ export function Stall() {
   const [mode, setMode] = useState<"qr" | "nfc">("qr");
   const [refresh, setRefresh] = useState(0);
   const [redeeming, setRedeeming] = useState(false);
+  const onClaimed = useCallback(() => setRefresh((r) => r + 1), []);
 
   useEffect(() => {
     api<StallData>("/stall").then(setData).catch((e) => setError(e instanceof ApiError ? e.message : "Couldn't load stall."));
@@ -37,10 +38,10 @@ export function Stall() {
     }
   }
 
-  function close() {
+  const close = useCallback(() => {
     setActive(null);
     setByo(false);
-  }
+  }, []);
 
   if (error && !data) return <p className="error">{error}</p>;
   if (!data) return null;
@@ -80,12 +81,12 @@ export function Stall() {
       <p className="muted" style={{ textAlign: "center" }}>{mode === "nfc" ? "Tap the item sold, then ask the customer to tap the sticker" : "Tap the item sold to show a code"}</p>
       <button className="btn btn-secondary" onClick={() => setRedeeming(true)}>Redeem a reward</button>
       {redeeming && <RedeemSheet onClose={() => setRedeeming(false)} />}
-      {active && <QrSheet active={active} byo={byo} onClose={close} onClaimed={() => setRefresh((r) => r + 1)} onRegenerate={() => sell(active.item)} />}
+      {active && <QrSheet active={active} byo={byo} onClose={close} onClaimed={onClaimed} onRegenerate={() => sell(active.item)} />}
     </>
   );
 }
 
-function QrSheet({
+export function QrSheet({
   active,
   byo,
   onClose,
@@ -118,12 +119,18 @@ function QrSheet({
     };
   }, [active.id]);
 
+  // Callbacks via refs: the parent passes new functions on every render, and re-running this effect on each
+  // one re-fired onClaimed (which re-renders the parent) in an endless loop and kept cancelling the close timer.
+  const onClaimedRef = useRef(onClaimed);
+  const onCloseRef = useRef(onClose);
+  onClaimedRef.current = onClaimed;
+  onCloseRef.current = onClose;
   useEffect(() => {
     if (status.state !== "claimed") return;
-    onClaimed(); // the "Your stall this week" panel reloads only when a meal was actually claimed
-    const t = setTimeout(onClose, 3000);
+    onClaimedRef.current(); // the "Your stall this week" panel reloads once per real claim
+    const t = setTimeout(() => onCloseRef.current(), 3000);
     return () => clearTimeout(t);
-  }, [status.state, onClose]);
+  }, [status.state]);
 
   const [confirming, setConfirming] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
