@@ -6,6 +6,7 @@ import { activityLabel, budgetLine, budgetNote, lastWeekRange, showSwapLine, fac
 
 type Summary = {
   recap_ready: boolean;
+  recap_week: "last" | "this" | null;
   points_total: number;
   points_week: number;
   meals_week: number;
@@ -29,6 +30,7 @@ export function Home({ user }: { user: User }) {
   const [data, setData] = useState<Summary | null>(null);
   const [failed, setFailed] = useState(false);
   const [nudge, setNudge] = useState<string | null>(null);
+  const [nudgeSettled, setNudgeSettled] = useState(false); // hold the swap line until we know whether the nudge already says it
   const [toast, setToast] = useState<string | null>(null);
   const load = useCallback(() => {
     api<Summary>("/me/summary").then(setData).catch(() => setFailed(true));
@@ -39,7 +41,7 @@ export function Home({ user }: { user: User }) {
   }, [load]);
   useEffect(load, [load]);
   useEffect(() => {
-    api<{ text: string }>("/me/nudge").then((n) => setNudge(n.text)).catch(() => {});
+    api<{ text: string }>("/me/nudge").then((n) => setNudge(n.text)).catch(() => {}).finally(() => setNudgeSettled(true));
   }, []);
 
   if (failed) return <p className="error">Couldn't load your week. Reload to try again.</p>;
@@ -68,7 +70,7 @@ export function Home({ user }: { user: User }) {
         <button className="card" onClick={() => navigate("/recap")} style={{ border: 0, textAlign: "left", cursor: "pointer", width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span>
             <span className="title" style={{ fontSize: 18 }}>Your week in review</span>
-            <div className="muted">{lastWeekRange(Date.now())}</div>
+            <div className="muted">{data.recap_week === "this" ? "This week so far" : lastWeekRange(Date.now())}</div>
           </span>
           <span className="muted">Share ›</span>
         </button>
@@ -103,7 +105,7 @@ export function Home({ user }: { user: User }) {
       <MealPhoto label="Snap a meal" primary onLogged={logged} />
 
       {nudge && <p className="body" style={{ fontSize: 14 }}>{nudge}</p>}
-      {data.swap && showSwapLine(nudge, data.swap) && (
+      {nudgeSettled && data.swap && showSwapLine(nudge, data.swap) && (
         <p className={nudge ? "muted" : "body"} style={{ fontSize: 14, marginTop: nudge ? -8 : undefined }}>
           Swap {shortName(data.swap.from).toLowerCase()} for {shortName(data.swap.to).toLowerCase()} to save {data.swap.saves_kg} kg next time.
         </p>

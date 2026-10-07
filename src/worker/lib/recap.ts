@@ -51,7 +51,8 @@ export function buildRecap(input: {
 /** Last week vs the student's budget; only when it was a full post-baseline week with kg logged, and only if under. */
 function underBy(createdAt: number, from: number, inWeek: RecapAct[], acts: RecapAct[], now: number): number | null {
   if (createdAt + WEEK > from) return null;
-  if (!inWeek.some((a) => a.kg_co2e != null)) return null;
+  // Needs some footprint: a week of only walks (0 kg) would read as "under" by the whole target.
+  if (!(inWeek.reduce((n, a) => n + (a.kg_co2e ?? 0), 0) > 0)) return null;
   const b = computeBudget({ createdAt, now, acts });
   if (!b.ready) return null;
   const d = Math.round((b.overall.target - b.overall.last_week) * 10) / 10;

@@ -62,3 +62,15 @@ describe("recap and Today agree", () => {
     }
   });
 });
+
+describe("recap_week on Today", () => {
+  it("says which week the recap opens on: this week for a new student, last week when it has activity", async () => {
+    const ctx = await setup();
+    const uid = await fresh(ctx, "New Student");
+    expect((await ctx.req("/api/me/summary", { as: uid })).body.recap_week).toBeNull();
+    await ctx.req("/api/steps", { as: uid, body: { steps: 3000 } });
+    expect((await ctx.req("/api/me/summary", { as: uid })).body.recap_week).toBe("this");
+    ctx.raw.exec(`UPDATE activities SET created_at = created_at - 7 * 86400000 WHERE user_id = '${uid}'`);
+    expect((await ctx.req("/api/me/summary", { as: uid })).body.recap_week).toBe("last");
+  });
+});

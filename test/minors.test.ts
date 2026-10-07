@@ -204,3 +204,13 @@ describe("mission rewards apply from the week they change", () => {
     expect((await ctx.req("/api/admin/settings", { as: "u-admin" })).body.missions.find((m: any) => m.id === "weekly-byo").points).toBe(200);
   });
 });
+
+describe("nudge on an empty week", () => {
+  it("uses the offline sentence without spending an AI call", async () => {
+    const env = live('{"text":"Nice week."}');
+    const ctx = await setup(env);
+    const uid = await student(ctx, "Empty");
+    for (let i = 0; i < 3; i++) expect((await ctx.req("/api/me/nudge", { as: uid })).body.source).toBe("mock");
+    expect(env.AI_FETCH).not.toHaveBeenCalled();
+  });
+});

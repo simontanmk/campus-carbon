@@ -11,6 +11,12 @@ Open the app in Safari or Chrome. Don't open it inside a chat app's built-in bro
 
 ## Before the demo
 
+- [ ] **Admin sign-in (once):** set a passcode of 12 or more characters as a Cloudflare secret. You'll be asked to type it; it's never stored in the repo:
+      `npx wrangler secret put ADMIN_PASSCODE`
+- [ ] **Make a phone admin:** on that phone, open `/admin/login`, enter the passcode → Admin. To make it a seller phone, go to Switch persona → the stall's seller. If switching expires (12 h) or someone taps "Stop switching", sign in at `/admin/login` again.
+- [ ] **Morning of the demo, refresh the personas (Alex, Bea, Chen):** move their seeded history so it ends yesterday. Nothing is deleted, and real claims are untouched:
+      `npm run seed:rebase`
+
 - [ ] **Limits:** rehearsal claims count toward them (5 per day, 1 per stall per 10 min). For the live run, use a fresh display name, or raise the daily limit for the day in Admin → Points and limits (`rate_daily_max`), or with:
       `npx wrangler d1 execute campus-carbon --remote --command "UPDATE settings SET value='50' WHERE key='rate_daily_max'"`
 - [ ] **AI allowance:** each student gets 20 live AI calls a day (Points and limits → `ai_daily_max`). Raise it for heavy rehearsals.
@@ -66,7 +72,7 @@ Write the stall link from Admin → Stalls and items onto a sticker. Set the sta
 
 ## Weekly recap card
 
-- [ ] Today → "Your week in review" (with last week's dates) → the card draws.
+- [ ] Today → "Your week in review" → the card draws. Under the title: last week's dates, or "This week so far" for a student who only has activity this week (it opens on that week).
 - [ ] The "Last week" / "This week so far" switch redraws the card. An empty week says "Nothing logged that week" or "Nothing logged yet this week".
 - [ ] Share → Instagram Story (iPhone and Android) shows the 1080×1920 card. WhatsApp sends it as an image. On a laptop the button is Download.
 
@@ -79,8 +85,8 @@ Write the stall link from Admin → Stalls and items onto a sticker. Set the sta
   - a code (e.g. `AZR-2HT`) with a QR code and a 10-minute countdown appears
   - the balance drops by 150
   - Cancel puts the points back
-- [ ] **Seller confirms by typing:** Redeem a reward → type the code (any case, dash optional) → "Free kopi for <name>". The student's card flips to "Redeemed ✓", the balance and history update, and Ranks is unchanged.
-- [ ] **Seller confirms by scanning:** Redeem a reward → Scan code → allow the camera → point at the student's QR → the phone vibrates and shows "<reward> for <name>" without typing.
+- [ ] **Seller confirms by typing:** Redeem a reward → type the code (any case, dash optional) → "Free kopi for <name>". On the student's phone, within about 2 s, the code card disappears and a "Redeemed ✓ Free kopi" message shows. The balance and history update, and Ranks is unchanged.
+- [ ] **Seller confirms by scanning:** Redeem a reward → Scan code → allow the camera → point at the student's QR → "<reward> for <name>" without typing. Android phones also give a short vibration; iPhones don't support it.
 - [ ] **Scanning fallbacks:**
   - deny the camera once: "Camera blocked…", and typing still works
   - scanning a claim QR by mistake is ignored
@@ -97,7 +103,7 @@ Write the stall link from Admin → Stalls and items onto a sticker. Set the sta
   - four figures
   - 8 weekly bars with kg saved under each
   - a QR code in the corner
-- [ ] Claim a meal on a phone: within 30 s the numbers move.
+- [ ] Claim a meal on a phone: within about a minute the numbers move. The page and the server each keep results for up to 30 s.
 - [ ] From a student's Today → "See campus impact ›": the page shows "‹ Back to Today".
 
 ## Admin

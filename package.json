@@ -13,7 +13,9 @@
     "cf-typegen": "wrangler types",
     "seed:sql": "node seed/build-sql.ts > seed/seed.sql",
     "db:local": "wrangler d1 migrations apply campus-carbon --local && npm run seed:sql && wrangler d1 execute campus-carbon --local --file seed/seed.sql",
-    "seed:routes": "node seed/fetch-routes.ts"
+    "seed:routes": "node seed/fetch-routes.ts",
+    "seed:rebase": "node seed/build-rebase.ts > seed/rebase.sql && wrangler d1 execute campus-carbon --remote --file seed/rebase.sql",
+    "seed:rebase:local": "node seed/build-rebase.ts > seed/rebase.sql && wrangler d1 execute campus-carbon --local --file seed/rebase.sql"
   },
   "dependencies": {
     "hono": "^4.13.10",

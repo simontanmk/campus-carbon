@@ -7,6 +7,8 @@ export type Bindings = {
   AI_MODEL?: string;
   AI_FALLBACK_MODEL?: string;
   AI_API_KEY?: string;
+  /** Optional secret (12+ characters) that lets a device sign in as the admin at /admin/login. Unset = off. */
+  ADMIN_PASSCODE?: string;
   /** Test seam: replaces global fetch for AI calls. */
   AI_FETCH?: typeof fetch;
 };

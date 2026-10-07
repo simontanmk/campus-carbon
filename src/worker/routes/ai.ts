@@ -126,6 +126,8 @@ ai.get("/me/nudge", student, async (c) => {
   const cached = await db.prepare("SELECT text FROM summaries WHERE user_id = ? AND week_start = ?").bind(uid, weekStart).first<{ text: string }>();
   if (cached) return c.json({ text: cached.text, source: "live" });
   const facts = await weekFacts(db, uid, now);
+  // Nothing to personalise yet: the offline sentence, without spending one of the student's AI calls.
+  if (facts.meals_week === 0 && facts.week_kg <= 0) return c.json({ text: mockNudge(facts).text, source: "mock" });
   const r = (await takeAiCall(c))
     ? await aiJson(c.env, { instructions: NUDGE_PROMPT, text: JSON.stringify(facts) }, validateNudge, () => mockNudge(facts), c.env.AI_FETCH)
     : { value: mockNudge(facts), source: "mock" as const };

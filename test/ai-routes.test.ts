@@ -193,13 +193,13 @@ describe("GET /api/me/nudge", () => {
     expect(env.AI_FETCH).toHaveBeenCalledTimes(1);
   });
 
-  it("does not cache a live nudge for an empty week", async () => {
+  it("an empty week neither calls the AI nor caches a sentence", async () => {
     const env = live('{"text":"Nothing yet this week."}');
     const ctx = await setup(env);
     const uid = await freshStudent(ctx);
     await ctx.req("/api/me/nudge", { as: uid });
     await ctx.req("/api/me/nudge", { as: uid });
-    expect(env.AI_FETCH).toHaveBeenCalledTimes(2);
+    expect(env.AI_FETCH).not.toHaveBeenCalled();
     expect((ctx.raw.prepare("SELECT COUNT(*) AS n FROM summaries").get() as any).n).toBe(0);
   });
 

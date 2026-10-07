@@ -47,3 +47,27 @@ auth.post("/session/stop-switching", (c) => {
   forgetAdmin(c);
   return c.json({ ok: true });
 });
+
+const sha256 = async (s: string) => new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
+
+/** Same-length digests compared in full, so timing doesn't reveal how much of a guess was right. */
+async function samePasscode(a: string, b: string): Promise<boolean> {
+  const [x, y] = await Promise.all([sha256(a), sha256(b)]);
+  let diff = 0;
+  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
+  return diff === 0;
+}
+
+/** Demo-day bootstrap: a phone becomes the seeded admin with the ADMIN_PASSCODE secret. Off unless it's set. */
+auth.post("/admin/login", async (c) => {
+  const secret = c.env.ADMIN_PASSCODE;
+  if (!secret || secret.length < 12) return fail(c, 404, "not_found", "Not found.");
+  const { passcode } = (await readBody(c)) as { passcode?: unknown };
+  if (typeof passcode !== "string" || !(await samePasscode(passcode, secret))) {
+    return fail(c, 401, "wrong_passcode", "That passcode isn't right.");
+  }
+  const admin = await c.env.DB.prepare("SELECT id, display_name, role, stall_id FROM users WHERE id = 'u-admin' AND role = 'admin'").first<User>();
+  if (!admin) return fail(c, 404, "no_admin", "The admin account is missing. Run the seed.");
+  await startSession(c, admin.id);
+  return c.json({ user: admin });
+});

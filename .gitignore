@@ -3,6 +3,7 @@ dist
 .wrangler
 .dev.vars
 seed/seed.sql
+seed/rebase.sql
 .DS_Store
 .claude/
 .superpowers/

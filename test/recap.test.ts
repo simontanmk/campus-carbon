@@ -89,3 +89,14 @@ describe("buildRecap", () => {
     expect(buildRecap({ ...base, displayName: "  Bea   Lim Wei Ling ", week: "last", acts: [] }).first_name).toBe("Bea");
   });
 });
+
+describe("under_budget_kg needs a footprint", () => {
+  it("is null for a week of only walks (0 kg)", () => {
+    const created = MON - 21 * DAY;
+    const acts = [
+      act({ created_at: created + H, kg_co2e: 10, low_carbon: 0 }),
+      act({ type: "trip", category: "mobility", low_carbon: null, kg_co2e: 0, points: 10, verified: 0, detail: { mode: "walk" } }),
+    ];
+    expect(buildRecap({ ...base, createdAt: created, week: "last", acts }).under_budget_kg).toBeNull();
+  });
+});

@@ -74,11 +74,11 @@ button { font: inherit; color: inherit; }
 .btn:active { transform: scale(0.98); }
 .btn:disabled { opacity: 0.35; }
 .btn-secondary { background: transparent; color: var(--text); border: 0.5px solid var(--line); }
-input[type="text"], input[type="number"] {
+input[type="text"], input[type="number"], input[type="password"] {
   width: 100%; padding: 15px 16px; border-radius: 14px; border: 0.5px solid var(--line);
   font: inherit; font-size: 17px; background: var(--card); color: var(--text); outline: none;
 }
-input[type="text"]:focus, input[type="number"]:focus { border-color: var(--text-2); }
+input[type="text"]:focus, input[type="number"]:focus, input[type="password"]:focus { border-color: var(--text-2); }
 .switch { position: relative; width: 51px; height: 31px; flex: none; }
 .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
 .switch span { position: absolute; inset: 0; border-radius: 999px; background: #e3e3e0; transition: background 160ms ease; cursor: pointer; }

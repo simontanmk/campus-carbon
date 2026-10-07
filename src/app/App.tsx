@@ -12,6 +12,7 @@ import { AdminSettings } from "./screens/AdminSettings";
 import { AdminInsights } from "./screens/AdminInsights";
 import { Welcome } from "./screens/Welcome";
 import { Impact } from "./screens/Impact";
+import { AdminLogin } from "./screens/AdminLogin";
 import { Recap } from "./screens/Recap";
 import { Rewards } from "./screens/Rewards";
 import { AdminRewards } from "./screens/AdminRewards";
@@ -30,6 +31,7 @@ export function App() {
 
   // Public projector page: no session, no Welcome prompt.
   if (path === "/impact") return <Impact />;
+  if (path === "/admin/login") return <AdminLogin />;
   if (!me) return null;
   // Welcome keeps the current URL (including /claim?t=...), so the claim resumes after onboarding.
   if (!me.user) return <Welcome onDone={load} />;

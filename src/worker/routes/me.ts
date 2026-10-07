@@ -73,6 +73,10 @@ me.get("/me/summary", requireRole("student"), async (c) => {
     meals_week: totals?.meals_week ?? 0,
     low_carbon_meals_week: totals?.low_week ?? 0,
     kg_week: Math.round((totals?.kg_week ?? 0) * 100) / 100,
+    // Which week /recap opens on (the same rule as the Recap screen): last week if it has activity, else this week.
+    recap_week: myActs.some((a) => a.created_at >= weekStart - 7 * 86_400_000 && a.created_at < weekStart)
+      ? "last"
+      : myActs.some((a) => a.created_at >= weekStart) ? "this" : null,
     recap_ready: myActs.some((a) => a.created_at >= weekStart - 7 * 86_400_000),
     recent: results.map(({ detail_json, from_name, to_name, ...r }) => ({
       ...r,

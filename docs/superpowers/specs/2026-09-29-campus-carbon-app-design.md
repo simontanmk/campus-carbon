@@ -53,6 +53,7 @@ Hono is a small routing library for Workers: it maps URLs such as `POST /api/cla
 - `users.role` is `student`, `seller` (bound to one `stall_id`) or `admin`.
 - Sellers and admins cannot claim tokens.
 - Admins get a **persona switcher** so one device can act as any seeded user during the demo.
+  - Admin sign-in for a new device: `/admin/login` with the `ADMIN_PASSCODE` Cloudflare secret (12 or more characters; the route answers 404 when the secret isn't set). It signs the device in as the seeded admin, `u-admin`.
   - The switch capability (`adm` cookie) lasts 12 hours. "Stop switching on this device" drops it and keeps the current persona, for handing a phone to someone else.
 - `email` and `email_verified_at` exist in the schema but are unused. A later pilot adds "verify your NTU email" without a data migration.
 
