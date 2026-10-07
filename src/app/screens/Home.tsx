@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { MealPhoto } from "../components/MealPhoto";
 import { navigate } from "../router";
 import { api, type User } from "../api";
-import { activityLabel, budgetLine, budgetNote, lastWeekRange, factHeadline, shortName, weekHeadline } from "../copy";
+import { activityLabel, budgetLine, budgetNote, lastWeekRange, showSwapLine, factHeadline, shortName, weekHeadline } from "../copy";
 
 type Summary = {
   recap_ready: boolean;
@@ -103,7 +103,7 @@ export function Home({ user }: { user: User }) {
       <MealPhoto label="Snap a meal" primary onLogged={logged} />
 
       {nudge && <p className="body" style={{ fontSize: 14 }}>{nudge}</p>}
-      {data.swap && (
+      {data.swap && showSwapLine(nudge, data.swap) && (
         <p className={nudge ? "muted" : "body"} style={{ fontSize: 14, marginTop: nudge ? -8 : undefined }}>
           Swap {shortName(data.swap.from).toLowerCase()} for {shortName(data.swap.to).toLowerCase()} to save {data.swap.saves_kg} kg next time.
         </p>

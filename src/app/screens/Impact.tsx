@@ -34,7 +34,8 @@ export function Impact() {
   return (
     <div className="impact">
       <div className="eyebrow">This week on campus</div>
-      <h1 className="impact-headline">≈ {d.kg_saved} kg CO₂e saved</h1>
+      {/* The serif has no small "₂" glyph (it shows a full-size 2), so draw the subscript explicitly. */}
+      <h1 className="impact-headline">≈ {d.kg_saved} kg CO<sub style={{ fontSize: "0.5em", verticalAlign: "-0.1em" }}>2</sub>e saved</h1>
       <p className="muted">
         Estimated, vs an average meal on today's campus menu{d.avg_meal_kg != null ? ` (${d.avg_meal_kg} kg)` : ""}, from {d.verified_meals} stall-verified {d.verified_meals === 1 ? "meal" : "meals"}.
       </p>

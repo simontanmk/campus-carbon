@@ -11,6 +11,7 @@ type Data = {
 };
 
 const meals = (n: number) => `${n} ${n === 1 ? "meal" : "meals"}`;
+const containers = (n: number) => `${n} own ${n === 1 ? "container" : "containers"}`;
 
 export function AdminInsights() {
   const [d, setD] = useState<Data | null>(null);
@@ -35,7 +36,7 @@ export function AdminInsights() {
               <div className="row" key={s.id} style={{ alignItems: "flex-start" }}>
                 <span className="what">
                   {s.name}
-                  <div className="muted">{s.this_week.byo} own containers · last week {meals(s.last_week.meals)}, {pct(s.last_week.low_carbon_share)} low-carbon</div>
+                  <div className="muted">{containers(s.this_week.byo)} · last week {meals(s.last_week.meals)}, {pct(s.last_week.low_carbon_share)} low-carbon</div>
                 </span>
                 <span style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                   <div>{meals(s.this_week.meals)}</div>

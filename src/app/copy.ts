@@ -138,3 +138,9 @@ export function lastWeekRange(now: number): string {
   return `${weekLabel(monday - 7 * DAY_MS)} – ${weekLabel(monday - DAY_MS)}`;
 }
 export const recapEmpty = (week: "last" | "this"): string => (week === "this" ? "Nothing logged yet this week." : "Nothing logged that week.");
+
+/** The swap line repeats the nudge when the nudge already names the suggested dish; show it only when it adds something. */
+export function showSwapLine(nudge: string | null, swap: { to: string } | null): boolean {
+  if (!swap) return false;
+  return !nudge || !nudge.toLowerCase().includes(shortName(swap.to).toLowerCase());
+}

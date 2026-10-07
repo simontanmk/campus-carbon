@@ -11,6 +11,7 @@ import {
   parsePartsText,
   pct,
   recapEmpty,
+  showSwapLine,
   recapLines,
   redeemBlock,
   shortName,
@@ -183,5 +184,17 @@ describe("recap entry and empty copy", () => {
   it("words an empty week for last week and for this week", () => {
     expect(recapEmpty("last")).toBe("Nothing logged that week.");
     expect(recapEmpty("this")).toBe("Nothing logged yet this week.");
+  });
+});
+
+describe("showSwapLine", () => {
+  const swap = { from: "Chicken rice", to: "Vegetarian noodles with tofu", saves_kg: 0.96 };
+  it("hides the swap line when the nudge already suggests that swap", () => {
+    expect(showSwapLine("Try swapping chicken rice for vegetarian noodles with tofu, which saves 0.96 kg.", swap)).toBe(false);
+  });
+  it("shows it with no nudge, or a nudge about something else", () => {
+    expect(showSwapLine(null, swap)).toBe(true);
+    expect(showSwapLine("Nice week of walking.", swap)).toBe(true);
+    expect(showSwapLine("Nice week.", null)).toBe(false);
   });
 });
