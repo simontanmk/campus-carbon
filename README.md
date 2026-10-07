@@ -38,3 +38,7 @@ npm run typecheck
 - Design specs: `docs/superpowers/specs/`
 - Implementation plans: `docs/superpowers/plans/`
 - Real-phone demo checklist: `docs/demo-checklist.md`
+
+## Licence
+
+Code: [MIT](LICENSE). Data sources keep their own licences, including the OpenStreetMap-derived routes (ODbL). See [CREDITS.md](CREDITS.md).

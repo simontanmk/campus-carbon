@@ -123,6 +123,7 @@ export function Log() {
                 <span className={o.points > 0 ? "pts green" : "pts"}>{o.points > 0 ? `+${o.points}` : "0"}</span>
               </button>
             ))}
+            <p className="muted" style={{ fontSize: 11 }}>Routes © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" style={{ color: "inherit" }}>OpenStreetMap contributors</a></p>
           </div>
         )}
       </div>
