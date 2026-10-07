@@ -209,3 +209,5 @@ select {
   .impact-figures { grid-template-columns: repeat(4, 1fr); }
   .impact .num { font-size: 44px; }
 }
+/* A sheet never grows past the screen (the scanner adds a camera view); it scrolls instead. */
+.sheet { max-height: 100dvh; overflow-y: auto; }

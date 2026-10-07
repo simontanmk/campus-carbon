@@ -2,6 +2,7 @@ import QRCode from "qrcode";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api";
 import { pct, showCode } from "../copy";
+import { runScanner } from "../scanner";
 
 type Item = { id: string; name: string; kind: string; kg_co2e: number | null; low_carbon: boolean };
 type StallData = { stall: { id: string; name: string; canteen: string; active: boolean; verify_method: "qr" | "nfc" | "both" }; items: Item[] };
@@ -286,7 +287,7 @@ function RedeemSheet({ onClose }: { onClose: () => void }) {
                 <button type="button" className="btn btn-secondary" onClick={() => setScanning(false)}>Type the code instead</button>
               </>
             ) : (
-              <button type="button" className="btn" onClick={() => { setError(null); setScanning(true); }}>Scan code</button>
+              <button type="button" className="btn" onClick={() => { (document.activeElement as HTMLElement | null)?.blur(); setError(null); setScanning(true); }}>Scan code</button>
             )}
             <input
               type="text"
@@ -314,51 +315,33 @@ function RedeemSheet({ onClose }: { onClose: () => void }) {
 function Scanner({ onCode, onError }: { onCode: (code: string) => void; onError: (message: string) => void }) {
   const video = useRef<HTMLVideoElement>(null);
   useEffect(() => {
-    let stream: MediaStream | null = null;
-    let timer = 0;
-    let stopped = false;
-    const stop = () => {
-      stopped = true;
-      clearTimeout(timer);
-      stream?.getTracks().forEach((t) => t.stop());
-    };
-    (async () => {
-      try {
-        const { decodeFrame } = await import("../qrDecode");
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
-        if (stopped) return stop();
-        const v = video.current!;
-        v.srcObject = stream;
+    const canvas = document.createElement("canvas");
+    const g = canvas.getContext("2d", { willReadFrequently: true })!;
+    return runScanner({
+      loadDecoder: async () => (await import("../qrDecode")).decodeFrame,
+      openCamera: () => navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false }),
+      attach: async (stream) => {
+        const v = video.current;
+        if (!v) throw new Error("closed");
+        v.srcObject = stream as MediaStream;
         await v.play();
-        const canvas = document.createElement("canvas");
-        const g = canvas.getContext("2d", { willReadFrequently: true })!;
-        const scan = () => {
-          if (stopped) return;
-          if (v.videoWidth) {
-            const w = 480;
-            const h = Math.round(v.videoHeight * (w / v.videoWidth));
-            canvas.width = w;
-            canvas.height = h;
-            g.drawImage(v, 0, 0, w, h);
-            const code = decodeFrame(g.getImageData(0, 0, w, h).data, w, h);
-            if (code) {
-              stop(); // one confirm per scan, even if the QR stays in view
-              onCode(code);
-              return;
-            }
-          }
-          timer = window.setTimeout(scan, 200);
-        };
-        scan();
-      } catch (e) {
-        stop();
-        onError((e as Error).name === "NotAllowedError" ? "Camera blocked. Allow camera access, or type the code." : "Couldn't open the camera. Type the code instead.");
-      }
-    })();
-    return stop;
+      },
+      grab: () => {
+        const v = video.current;
+        if (!v || !v.videoWidth) return null;
+        const w = 480;
+        const h = Math.round(v.videoHeight * (w / v.videoWidth));
+        canvas.width = w;
+        canvas.height = h;
+        g.drawImage(v, 0, 0, w, h);
+        return { data: g.getImageData(0, 0, w, h).data, width: w, height: h };
+      },
+      onCode,
+      onError,
+    });
   }, [onCode, onError]);
   return (
     <video ref={video} muted playsInline aria-label="Camera view for scanning a reward code"
-      style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: 14, background: "#000" }} />
+      style={{ width: "100%", aspectRatio: "4 / 3", maxHeight: "38vh", objectFit: "cover", borderRadius: 14, background: "#000" }} />
   );
 }
