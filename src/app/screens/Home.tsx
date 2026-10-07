@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { MealPhoto } from "../components/MealPhoto";
 import { navigate } from "../router";
 import { api, type User } from "../api";
-import { activityLabel, budgetLine, budgetNote, factHeadline, shortName, weekHeadline } from "../copy";
+import { activityLabel, budgetLine, budgetNote, lastWeekRange, factHeadline, shortName, weekHeadline } from "../copy";
 
 type Summary = {
   recap_ready: boolean;
@@ -66,7 +66,10 @@ export function Home({ user }: { user: User }) {
 
       {data.recap_ready && (
         <button className="card" onClick={() => navigate("/recap")} style={{ border: 0, textAlign: "left", cursor: "pointer", width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span className="title" style={{ fontSize: 18 }}>Your week in review</span>
+          <span>
+            <span className="title" style={{ fontSize: 18 }}>Your week in review</span>
+            <div className="muted">{lastWeekRange(Date.now())}</div>
+          </span>
           <span className="muted">Share ›</span>
         </button>
       )}
@@ -119,7 +122,7 @@ export function Home({ user }: { user: User }) {
           </div>
         ))}
       </div>
-      <button className="link-btn" style={{ alignSelf: "center" }} onClick={() => navigate("/impact")}>See campus impact ›</button>
+      <button className="link-btn" style={{ alignSelf: "center" }} onClick={() => navigate("/impact?from=today")}>See campus impact ›</button>
     </>
   );
 }
@@ -167,7 +170,7 @@ function FirstVisit({ user, data, onLogged }: { user: User; data: Summary; onLog
 
       <MealPhoto label="Snap a meal" primary onLogged={onLogged} />
       <p className="muted" style={{ marginTop: -12 }}>For stalls without a code. Photo meals are self-reported.</p>
-      <button className="link-btn" style={{ alignSelf: "center" }} onClick={() => navigate("/impact")}>See campus impact ›</button>
+      <button className="link-btn" style={{ alignSelf: "center" }} onClick={() => navigate("/impact?from=today")}>See campus impact ›</button>
     </>
   );
 }

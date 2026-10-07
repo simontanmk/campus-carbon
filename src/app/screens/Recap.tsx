@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../api";
-import type { RecapData } from "../copy";
+import { recapEmpty, type RecapData } from "../copy";
 import { latestOnly } from "../latest";
 import { drawRecap } from "../recapImage";
 import { navigate } from "../router";
@@ -44,7 +44,7 @@ export function Recap() {
         url = URL.createObjectURL(blob);
         setPng({ blob, url });
       })
-      .catch(() => setError("Couldn't draw the card."));
+      .catch(() => !gone && setError("Couldn't draw the card. Tap the week again to retry."));
     return () => {
       gone = true;
       if (url) URL.revokeObjectURL(url);
@@ -89,7 +89,7 @@ export function Recap() {
       </div>
       {error && <p className="error">{error}</p>}
       {data?.empty ? (
-        <p className="body" style={{ textAlign: "center", padding: "48px 0" }}>Nothing logged that week.</p>
+        <p className="body" style={{ textAlign: "center", padding: "48px 0" }}>{recapEmpty(data.week)}</p>
       ) : png ? (
         <>
           <img src={png.url} alt="Your week as a shareable card" style={{ width: "100%", borderRadius: 18, border: "0.5px solid var(--panel-strong)" }} />

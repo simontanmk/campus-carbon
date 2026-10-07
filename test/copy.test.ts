@@ -1,6 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { weekHeadline } from "../src/app/copy";
-
+import {
+  activityLabel,
+  budgetLine,
+  budgetNote,
+  factHeadline,
+  formatParts,
+  lastWeekRange,
+  mmss,
+  ordinal,
+  parsePartsText,
+  pct,
+  recapEmpty,
+  recapLines,
+  redeemBlock,
+  shortName,
+  showCode,
+  weekHeadline,
+  weekLabel,
+  type RecapData,
+} from "../src/app/copy";
 describe("weekHeadline", () => {
   it("invites a first scan when no meals are logged", () => {
     expect(weekHeadline({ meals_week: 0, low_carbon_meals_week: 0 })).toBe("Scan the stall's code after your next meal to start your week.");
@@ -18,7 +36,6 @@ describe("weekHeadline", () => {
   });
 });
 
-import { factHeadline, shortName } from "../src/app/copy";
 
 describe("shortName", () => {
   it("turns economy rice names into plain phrases", () => {
@@ -40,7 +57,6 @@ describe("factHeadline", () => {
     expect(factHeadline({ high: { name: "A", kg: 1.36 }, low: { name: "B", kg: 0.65 } })).toBe("A has about twice the footprint of b.");
   });
 });
-import { activityLabel, budgetLine } from "../src/app/copy";
 
 describe("activityLabel", () => {
   const base = { item_name: null, detail: {}, place_names: null };
@@ -71,7 +87,6 @@ describe("budgetLine", () => {
   });
 });
 
-import { budgetNote } from "../src/app/copy";
 describe("budgetNote", () => {
   it("explains a missing budget when the first week had no footprint", () => {
     expect(budgetNote({ ready: false, reason: "no_baseline", ready_at: 0 })).toBe("No budget: your first week had nothing with a carbon footprint logged.");
@@ -80,7 +95,6 @@ describe("budgetNote", () => {
     expect(budgetNote({ ready: false, reason: "first_week", ready_at: Date.UTC(2026, 9, 6, 4) })).toBe("Your budget starts Tuesday, 6 October, based on your first week.");
   });
 });
-import { ordinal } from "../src/app/copy";
 
 describe("ordinal", () => {
   it.each([[1, "1st"], [2, "2nd"], [3, "3rd"], [4, "4th"], [11, "11th"], [12, "12th"], [13, "13th"], [21, "21st"], [22, "22nd"], [101, "101st"]])(
@@ -94,7 +108,6 @@ describe("activityLabel for photo meals", () => {
     expect(activityLabel({ type: "meal", item_name: null, detail: { dish: "Vegetarian noodles with tofu" }, place_names: null })).toBe("Vegetarian noodles with tofu");
   });
 });
-import { formatParts, parsePartsText } from "../src/app/copy";
 
 describe("ingredient text", () => {
   it("parses 'key grams' pairs separated by commas or new lines", () => {
@@ -107,7 +120,6 @@ describe("ingredient text", () => {
     expect(formatParts({ rice: 80, veg: 150 })).toBe("rice 80, veg 150");
   });
 });
-import { pct, weekLabel } from "../src/app/copy";
 describe("pct", () => {
   it("formats a share or a dash", () => {
     expect(pct(0.62)).toBe("62%");
@@ -120,7 +132,6 @@ describe("weekLabel", () => {
     expect(weekLabel(Date.UTC(2026, 9, 4, 16))).toBe("5 Oct");
   });
 });
-import { recapLines, type RecapData } from "../src/app/copy";
 describe("recapLines", () => {
   const MON = Date.UTC(2026, 9, 4, 16); // 5 Oct 2026 00:00 SGT
   const d: RecapData = {
@@ -149,7 +160,6 @@ describe("recapLines", () => {
     expect(recapLines({ ...d, week: "this" }).extras).toContain("currently #3 of 24");
   });
 });
-import { mmss, redeemBlock, showCode } from "../src/app/copy";
 describe("rewards copy", () => {
   it("shows codes with a dash and times as m:ss", () => {
     expect(showCode("K7PQ2M")).toBe("K7P-Q2M");
@@ -165,7 +175,6 @@ describe("rewards copy", () => {
   });
 });
 
-import { lastWeekRange, recapEmpty } from "../src/app/copy";
 describe("recap entry and empty copy", () => {
   it("names last week's SGT dates for the Today entry", () => {
     expect(lastWeekRange(Date.UTC(2026, 9, 14, 4))).toBe("5 Oct – 11 Oct"); // Wed 14 Oct SGT

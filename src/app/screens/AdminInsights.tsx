@@ -6,7 +6,7 @@ import { navigate } from "../router";
 type Stats = { meals: number; low_carbon_share: number | null; avg_kg: number | null; byo: number };
 type Data = {
   stalls: { id: string; name: string; this_week: Stats; last_week: Stats }[];
-  top_dishes: { name: string; count: number; low_carbon: boolean }[];
+  top_dishes: { name: string; stall_name: string | null; count: number; low_carbon: boolean }[];
   weeks: { week_start: number; verified_meals: number; low_carbon_share: number | null; photo_meals: number; trips: { walk: number; shuttle: number; car: number } }[];
 };
 
@@ -51,8 +51,8 @@ export function AdminInsights() {
           ) : (
             <div className="list">
               {d.top_dishes.map((t) => (
-                <div className="row" key={t.name}>
-                  <span className="what">{t.name}{t.low_carbon && <span className="muted" style={{ marginLeft: 8, color: "var(--accent)" }}>Low-carbon</span>}</span>
+                <div className="row" key={`${t.name}|${t.stall_name}`}>
+                  <span className="what">{t.name}{t.stall_name && <span className="muted"> · {t.stall_name}</span>}{t.low_carbon && <span className="muted" style={{ marginLeft: 8, color: "var(--accent)" }}>Low-carbon</span>}</span>
                   <span className="pts">{t.count}</span>
                 </div>
               ))}

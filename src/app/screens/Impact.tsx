@@ -15,6 +15,8 @@ export function Impact() {
   const [d, setD] = useState<ImpactData | null>(null);
   const [failed, setFailed] = useState(false);
   const [qr, setQr] = useState("");
+  // Only students who opened this from Today get a way back; the projector page stays clean.
+  const [fromToday] = useState(() => new URLSearchParams(location.search).get("from") === "today");
 
   useEffect(() => {
     const load = () => api<ImpactData>("/impact", undefined, { fresh: true }).then((x) => { setD(x); setFailed(false); }).catch(() => setFailed(true));
@@ -58,7 +60,7 @@ export function Impact() {
         <div>
           <div className="title" style={{ fontSize: 18 }}>Campus Carbon</div>
           <div className="muted">NTU CC0006 pilot · updated {updated}</div>
-          <button className="link-btn" style={{ marginTop: 8 }} onClick={() => navigate("/")}>Open Campus Carbon</button>
+          {fromToday && <button className="link-btn" style={{ marginTop: 8 }} onClick={() => navigate("/")}>‹ Back to Today</button>}
         </div>
         {qr && <img src={qr} alt="QR code to open Campus Carbon" width={96} height={96} />}
       </div>

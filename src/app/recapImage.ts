@@ -65,7 +65,7 @@ export async function drawRecap(d: RecapData, origin: string): Promise<Blob> {
   g.drawImage(qr, W - M - qrSize, H - M - qrSize, qrSize, qrSize);
   text("Join at", M, H - 250, `36px ${SANS}`, "#6e6e73", 560);
   text(new URL(origin).host, M, H - 195, `44px ${SANS}`, "#1c1c1e", 560);
-  text(L.footnote, M, H - 110, `28px ${SANS}`, "#8e8e93", 560);
+  text(L.footnote, M, H - 110, `23px ${SANS}`, "#8e8e93", 560); // ~560 px at 23 px, so it isn't squeezed
 
   return new Promise((resolve, reject) => c.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob failed"))), "image/png"));
 }

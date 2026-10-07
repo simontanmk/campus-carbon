@@ -101,13 +101,16 @@ function LiveCode({ active, onEnd }: { active: Active; onEnd: (redeemed: boolean
   const ended = useRef(false);
   const [qr, setQr] = useState("");
   useEffect(() => {
-    QRCode.toDataURL(redeemQrText(active.code), { margin: 1, width: 360 }).then(setQr).catch(() => {});
+    QRCode.toDataURL(redeemQrText(active.code), { margin: 2, width: 360 }).then(setQr).catch(() => {});
   }, [active.code]);
+  const onEndRef = useRef(onEnd); // the parent passes a new function each render; keep the polls from restarting
+  onEndRef.current = onEnd;
   const end = useCallback((redeemed: boolean) => {
     if (ended.current) return;
     ended.current = true;
-    onEnd(redeemed);
-  }, [onEnd]);
+    onEndRef.current(redeemed);
+  }, []);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 1000);
@@ -128,10 +131,17 @@ function LiveCode({ active, onEnd }: { active: Active; onEnd: (redeemed: boolean
   }, [left, end]);
 
   async function cancel() {
+    setCancelError(null);
     try {
       await api(`/rewards/redemptions/${active.id}/cancel`, {});
-    } finally {
       end(false);
+    } catch (e) {
+      // 409: the seller confirmed (or it lapsed) a moment ago — show what actually happened.
+      if (e instanceof ApiError && e.status === 409) {
+        const s = await api<{ status: string }>(`/rewards/redemptions/${active.id}`).catch(() => null);
+        if (s && s.status !== "pending") return end(s.status === "redeemed");
+      }
+      setCancelError("Couldn't cancel. Check your connection and try again.");
     }
   }
 
@@ -142,6 +152,7 @@ function LiveCode({ active, onEnd }: { active: Active; onEnd: (redeemed: boolean
       {qr && <img src={qr} alt={`QR code for ${showCode(active.code)}`} width={180} height={180} style={{ alignSelf: "center" }} />}
       <div className="muted">Show this to the seller · <span style={{ fontVariantNumeric: "tabular-nums" }}>{mmss(left)}</span> left</div>
       <button className="link-btn" style={{ alignSelf: "center" }} onClick={cancel}>Cancel</button>
+      {cancelError && <p className="error" role="alert">{cancelError}</p>}
     </div>
   );
 }

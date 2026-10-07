@@ -211,3 +211,4 @@ select {
 }
 /* A sheet never grows past the screen (the scanner adds a camera view); it scrolls instead. */
 .sheet { max-height: 100dvh; overflow-y: auto; }
+@media (max-width: 350px) { .tabbar button { padding: 9px 7px; font-size: 12px; } }

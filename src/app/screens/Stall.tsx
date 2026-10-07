@@ -39,7 +39,6 @@ export function Stall() {
 
   function close() {
     setActive(null);
-    setRefresh((r) => r + 1);
     setByo(false);
   }
 
@@ -81,7 +80,7 @@ export function Stall() {
       <p className="muted" style={{ textAlign: "center" }}>{mode === "nfc" ? "Tap the item sold, then ask the customer to tap the sticker" : "Tap the item sold to show a code"}</p>
       <button className="btn btn-secondary" onClick={() => setRedeeming(true)}>Redeem a reward</button>
       {redeeming && <RedeemSheet onClose={() => setRedeeming(false)} />}
-      {active && <QrSheet active={active} byo={byo} onClose={close} onRegenerate={() => sell(active.item)} />}
+      {active && <QrSheet active={active} byo={byo} onClose={close} onClaimed={() => setRefresh((r) => r + 1)} onRegenerate={() => sell(active.item)} />}
     </>
   );
 }
@@ -90,11 +89,13 @@ function QrSheet({
   active,
   byo,
   onClose,
+  onClaimed,
   onRegenerate,
 }: {
   active: Created & { item: Item; qr: string; local_expires_at: number };
   byo: boolean;
   onClose: () => void;
+  onClaimed: () => void;
   onRegenerate: () => void;
 }) {
   const [now, setNow] = useState(Date.now());
@@ -119,6 +120,7 @@ function QrSheet({
 
   useEffect(() => {
     if (status.state !== "claimed") return;
+    onClaimed(); // the "Your stall this week" panel reloads only when a meal was actually claimed
     const t = setTimeout(onClose, 3000);
     return () => clearTimeout(t);
   }, [status.state, onClose]);
@@ -239,8 +241,10 @@ function RedeemSheet({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ reward_name: string; student_name: string } | null>(null);
 
+  const sending = useRef(false); // the scan callback keeps the first render's closure, so guard with a ref, not `busy`
   async function send(value: string) {
-    if (busy) return;
+    if (sending.current) return;
+    sending.current = true;
     setBusy(true);
     setError(null);
     try {
@@ -248,6 +252,7 @@ function RedeemSheet({ onClose }: { onClose: () => void }) {
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't redeem. Try again.");
     } finally {
+      sending.current = false;
       setBusy(false);
     }
   }
@@ -259,6 +264,7 @@ function RedeemSheet({ onClose }: { onClose: () => void }) {
   const onCode = useCallback((c: string) => {
     setScanning(false);
     setCode(showCode(c));
+    navigator.vibrate?.(50); // a quick buzz so a busy seller knows the scan worked
     send(c);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- send reads fresh state through setters
   const onScanError = useCallback((m: string) => {
@@ -287,7 +293,7 @@ function RedeemSheet({ onClose }: { onClose: () => void }) {
                 <button type="button" className="btn btn-secondary" onClick={() => setScanning(false)}>Type the code instead</button>
               </>
             ) : (
-              <button type="button" className="btn" onClick={() => { (document.activeElement as HTMLElement | null)?.blur(); setError(null); setScanning(true); }}>Scan code</button>
+              <button type="button" className="btn" disabled={busy} onClick={() => { (document.activeElement as HTMLElement | null)?.blur(); setError(null); setScanning(true); }}>Scan code</button>
             )}
             <input
               type="text"
@@ -301,7 +307,7 @@ function RedeemSheet({ onClose }: { onClose: () => void }) {
               aria-label="Reward code"
               style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 28, letterSpacing: "0.08em", textAlign: "center" }}
             />
-            {error && <p className="error">{error}</p>}
+            {error && <p className="error" role="alert">{error}</p>}
             <button className="btn btn-secondary" disabled={busy || code.replace(/[^A-Za-z0-9]/g, "").length !== 6}>Confirm</button>
             <button type="button" className="btn btn-secondary" onClick={onClose}>Close</button>
           </form>
