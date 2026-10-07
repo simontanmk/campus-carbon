@@ -41,3 +41,12 @@ describe("rewards schema and seed", () => {
     expect(() => ins("b", "BBBBBB")).toThrow(/UNIQUE/);
   });
 });
+
+describe("newCode without bias", () => {
+  it("skips bytes that would favour some letters", () => {
+    const bytes = [250, 251, 0, 1, 2, 3, 4, 5];
+    let i = 0;
+    const rand = (n: number) => Uint8Array.from({ length: n }, () => bytes[i++ % bytes.length]);
+    expect(newCode(rand)).toBe("ABCDEF");
+  });
+});

@@ -52,3 +52,13 @@ describe("/api/me/summary recap_ready", () => {
     expect((await ctx.req("/api/me/summary", { as: uid })).body.recap_ready).toBe(true);
   });
 });
+
+describe("recap and Today agree", () => {
+  it("this week's recap points equal Today's points_week", async () => {
+    const ctx = await setup();
+    for (const uid of ["u-alex", "u-bea", "u-chen"]) {
+      const today = (await ctx.req("/api/me/summary", { as: uid })).body.points_week;
+      expect((await ctx.req("/api/me/recap?week=this", { as: uid })).body.points).toBe(today);
+    }
+  });
+});

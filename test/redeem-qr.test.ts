@@ -49,3 +49,10 @@ describe("decodeFrame", () => {
     expect(decodeFrame(new Uint8ClampedArray(64 * 64 * 4).fill(255), 64, 64)).toBeNull();
   });
 });
+
+describe("camera frames need our prefix", () => {
+  it("ignores a QR that is just six letters", () => {
+    const { data, size } = frame("ABCDEF");
+    expect(decodeFrame(data, size, size)).toBeNull();
+  });
+});

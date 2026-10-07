@@ -164,3 +164,15 @@ describe("rewards copy", () => {
     expect(redeemBlock({ cost: 150, left_this_week: null }, 150, false)).toBeNull();
   });
 });
+
+import { lastWeekRange, recapEmpty } from "../src/app/copy";
+describe("recap entry and empty copy", () => {
+  it("names last week's SGT dates for the Today entry", () => {
+    expect(lastWeekRange(Date.UTC(2026, 9, 14, 4))).toBe("5 Oct – 11 Oct"); // Wed 14 Oct SGT
+    expect(lastWeekRange(Date.UTC(2026, 9, 11, 16, 5))).toBe("5 Oct – 11 Oct"); // Mon 12 Oct 00:05 SGT
+  });
+  it("words an empty week for last week and for this week", () => {
+    expect(recapEmpty("last")).toBe("Nothing logged that week.");
+    expect(recapEmpty("this")).toBe("Nothing logged yet this week.");
+  });
+});

@@ -68,7 +68,8 @@ const ISSUE = `INSERT INTO redemptions (id, user_id, reward_id, code, cost, stat
   WHERE r.id = ?3 AND r.active = 1
     AND ?7 - (SELECT COALESCE(SUM(cost), 0) FROM redemptions WHERE user_id = ?2 AND (status = 'redeemed' OR (status = 'pending' AND expires_at > ?5))) >= r.cost
     AND (r.weekly_stock IS NULL OR (SELECT COUNT(*) FROM redemptions WHERE reward_id = r.id AND created_at >= ?8
-          AND (status = 'redeemed' OR (status = 'pending' AND expires_at > ?5))) < r.weekly_stock)`;
+          AND (status = 'redeemed' OR (status = 'pending' AND expires_at > ?5))) < r.weekly_stock)
+  RETURNING cost`;
 
 rewards.post("/rewards/:id/redeem", student, async (c) => {
   const db = c.env.DB;
@@ -85,22 +86,23 @@ rewards.post("/rewards/:id/redeem", student, async (c) => {
   for (let attempt = 0; attempt < 3; attempt++) {
     const id = crypto.randomUUID();
     const code = newCode();
-    let changes: number;
+    let row: { cost: number } | null;
     try {
-      changes = (await db.prepare(ISSUE).bind(id, uid, rid, code, now, now + HOLD_MS, earned, sgWeekStart(now)).run()).meta.changes;
+      row = await db.prepare(ISSUE).bind(id, uid, rid, code, now, now + HOLD_MS, earned, sgWeekStart(now)).first<{ cost: number }>();
     } catch (e) {
       const msg = String(e);
       if (msg.includes("UNIQUE") && msg.includes("redemptions.code")) continue; // another live code has these letters
       if (msg.includes("UNIQUE")) return fail(c, 409, "already_pending", PENDING); // a second tap won the race
       throw e;
     }
-    if (changes === 1) return c.json({ id, code, reward_name: reward.name, cost: reward.cost, expires_at: now + HOLD_MS, server_now: now }, 201);
+    if (row) return c.json({ id, code, reward_name: reward.name, cost: row.cost, expires_at: now + HOLD_MS, server_now: now }, 201);
+    // Nothing inserted: a concurrent code from this student explains it first (its hold also lowers balance and stock).
+    if (await livePending(db, uid, now)) return fail(c, 409, "already_pending", PENDING);
     if (reward.weekly_stock != null && (await usedThisWeek(db, rid, now)) >= reward.weekly_stock) {
       return fail(c, 409, "out_of_stock", "All gone this week. Back on Monday.");
     }
     const balance = earned - (await spentBy(db, uid, now));
     if (balance < reward.cost) return fail(c, 409, "insufficient", `You need ${reward.cost - balance} more points.`);
-    if (await livePending(db, uid, now)) return fail(c, 409, "already_pending", PENDING);
     return fail(c, 404, "no_reward", "That reward isn't available.");
   }
   return fail(c, 503, "busy", "Couldn't make a code just now. Try again.");
@@ -125,8 +127,12 @@ rewards.post("/stall/redeem", seller, async (c) => {
   const db = c.env.DB;
   const stall = c.get("user")!.stall_id;
   if (!stall) return fail(c, 404, "no_stall", "This seller account isn't linked to a stall.");
-  const code = normalizeCode((await readBody(c)).code);
-  if (!code) return fail(c, 400, "invalid_code", "Codes are 6 letters and numbers.");
+  const raw = (await readBody(c)).code;
+  const code = normalizeCode(raw);
+  if (!code) {
+    const confusable = typeof raw === "string" && /[OIL01]/i.test(raw);
+    return fail(c, 400, "invalid_code", confusable ? "Codes never use O, I, L, 0 or 1. Check the letters with the student." : "Codes are 6 letters and numbers.");
+  }
   const now = Date.now();
   const done = await db
     .prepare(
@@ -146,13 +152,20 @@ rewards.post("/stall/redeem", seller, async (c) => {
   }
   const r = await db
     .prepare(
-      `SELECT r.status, r.expires_at, s.name AS stall_name FROM redemptions r JOIN rewards w ON w.id = r.reward_id
+      `SELECT r.status, r.expires_at, r.redeemed_at, r.stall_id AS confirmed_at_stall, s.name AS stall_name FROM redemptions r JOIN rewards w ON w.id = r.reward_id
        LEFT JOIN stalls s ON s.id = w.stall_id WHERE r.code = ? ORDER BY r.created_at DESC LIMIT 1`,
     )
     .bind(code)
-    .first<{ status: string; expires_at: number; stall_name: string | null }>();
+    .first<{ status: string; expires_at: number; redeemed_at: number | null; confirmed_at_stall: string | null; stall_name: string | null }>();
   if (!r) return fail(c, 404, "not_found", "No reward with that code. Check the letters with the student.");
-  if (r.status === "redeemed") return fail(c, 409, "used", "This code has already been used.");
+  if (r.status === "redeemed") {
+    // A seller whose confirm reply was lost and who taps again shouldn't think the student was turned away.
+    if (r.confirmed_at_stall === stall && r.redeemed_at != null) {
+      const at = new Date(r.redeemed_at).toLocaleTimeString("en-SG", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Singapore" });
+      return fail(c, 409, "used", `Already confirmed here at ${at}.`);
+    }
+    return fail(c, 409, "used", "This code has already been used.");
+  }
   if (r.status === "expired" || r.expires_at <= now) return fail(c, 410, "expired", "This code has expired. Ask the student to tap Redeem again.");
   return fail(c, 403, "wrong_stall", `This reward is for ${r.stall_name}.`);
 });

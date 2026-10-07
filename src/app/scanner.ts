@@ -1,8 +1,11 @@
 type Decode = (data: Uint8ClampedArray, width: number, height: number) => string | null;
-type Stream = { getTracks(): { stop(): void }[] };
+type Track = { stop(): void; addEventListener?(type: "ended", fn: () => void): void };
+type Stream = { getTracks(): Track[] };
 
 export const CAMERA_BLOCKED = "Camera blocked. Allow camera access, or type the code.";
 export const CAMERA_FAILED = "Couldn't open the camera. Type the code instead.";
+export const CAMERA_ENDED = "The camera stopped. Tap Scan code again.";
+export const SCANNER_LOAD_FAILED = "Couldn't load the scanner. Reload the page, or type the code.";
 
 export type ScanDeps = {
   loadDecoder: () => Promise<Decode>;
@@ -30,11 +33,29 @@ export function runScanner(d: ScanDeps): () => void {
     stream?.getTracks().forEach((t) => t.stop());
   };
   (async () => {
+    let decode: Decode;
     try {
-      const decode = await d.loadDecoder();
+      decode = await d.loadDecoder();
+    } catch {
+      // Usually a page left open across a redeploy: the old scanner file is gone.
+      if (!stopped) {
+        stop();
+        d.onError(SCANNER_LOAD_FAILED);
+      }
+      return;
+    }
+    try {
       if (stopped) return;
       stream = await d.openCamera();
       if (stopped) return stop();
+      // The phone ends the track on lock or app switch; say so instead of scanning black frames forever.
+      for (const t of stream.getTracks()) {
+        t.addEventListener?.("ended", () => {
+          if (stopped) return;
+          stop();
+          d.onError(CAMERA_ENDED);
+        });
+      }
       await d.attach(stream);
       if (stopped) return;
       const scan = () => {

@@ -129,7 +129,7 @@ describe("adminInsights", () => {
     const p = adminInsights({ acts, stalls: [{ id: "econ-rice", name: "Economy Rice" }, { id: "noodles", name: "Noodles" }], now: NOW });
     expect(p.stalls[0]).toEqual({ id: "econ-rice", name: "Economy Rice", this_week: { meals: 0, low_carbon_share: null, avg_kg: null, byo: 0 }, last_week: { meals: 1, low_carbon_share: 1, avg_kg: 0.4, byo: 0 } });
     expect(p.stalls[1].this_week).toEqual({ meals: 3, low_carbon_share: 0.67, avg_kg: 0.72, byo: 0 });
-    expect(p.top_dishes).toEqual([{ name: "Veg noodles", count: 2, low_carbon: true }, { name: "Chicken rice", count: 1, low_carbon: false }]);
+    expect(p.top_dishes).toEqual([{ name: "Veg noodles", stall_name: "Noodles", count: 2, low_carbon: true }, { name: "Chicken rice", stall_name: "Noodles", count: 1, low_carbon: false }]);
     expect(p.weeks).toHaveLength(8);
     expect(p.weeks[7]).toEqual({ week_start: MON, verified_meals: 3, low_carbon_share: 0.67, photo_meals: 1, trips: { walk: 0, shuttle: 1, car: 0 } });
   });
@@ -150,5 +150,29 @@ describe("underBudget: last week must be a full budget week", () => {
     const created = MON - 5 * DAY; // joined last Wednesday; budget ready today, last week only 5 days
     const rows: BudgetRow[] = [0, 1, 2, 3, 4].map((d) => ({ user_id: "w", user_created_at: created, created_at: created + d * DAY + H, category: "food", kg_co2e: 1.2 }));
     expect(underBudget(rows, NOW + 2 * DAY)).toBeNull();
+  });
+});
+
+describe("minors: top dishes and zero-kg weeks", () => {
+  it("keeps same-named dishes from different stalls apart, naming the stall", () => {
+    const acts = [
+      act({ item_id: "a-rice", item_name: "Chicken rice", stall_id: "noodles", low_carbon: 0, kg_co2e: 1.36 }),
+      act({ item_id: "b-rice", item_name: "Chicken rice", stall_id: "econ-rice", low_carbon: 0, kg_co2e: 1.2 }),
+      act({ item_id: "b-rice", item_name: "Chicken rice", stall_id: "econ-rice", low_carbon: 0, kg_co2e: 1.2 }),
+    ];
+    const p = adminInsights({ acts, stalls: [{ id: "econ-rice", name: "Economy Rice" }, { id: "noodles", name: "Noodles" }], now: NOW });
+    expect(p.top_dishes).toEqual([
+      { name: "Chicken rice", stall_name: "Economy Rice", count: 2, low_carbon: false },
+      { name: "Chicken rice", stall_name: "Noodles", count: 1, low_carbon: false },
+    ]);
+  });
+
+  it("doesn't count a student whose last week had no footprint at all (only walks)", () => {
+    const created = MON - 14 * DAY;
+    const rows: BudgetRow[] = [
+      { user_id: "w", user_created_at: created, created_at: created + H, category: "food", kg_co2e: 10 },
+      { user_id: "w", user_created_at: created, created_at: MON - 3 * DAY, category: "mobility", kg_co2e: 0 },
+    ];
+    expect(underBudget(rows, NOW)).toBeNull();
   });
 });

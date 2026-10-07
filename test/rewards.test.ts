@@ -210,3 +210,39 @@ describe("seller confirms", () => {
     expect((await confirm(ctx, uid, "ABCDEF")).status).toBe(403);
   });
 });
+
+describe("minors", () => {
+  it("a second simultaneous redeem from the same student says 'use your current code', even when points only cover one", async () => {
+    const ctx = await fresh();
+    const uid = await student(ctx, 160);
+    const res = await Promise.all([redeem(ctx, uid, "free-kopi"), redeem(ctx, uid, "free-kopi")]);
+    expect(res.map((r) => r.status).sort()).toEqual([201, 409]);
+    expect(res.find((r) => r.status === 409)!.body.error).toBe("already_pending");
+  });
+
+  it("a seller retrying their own confirm is told it already went through here", async () => {
+    const ctx = await fresh();
+    const uid = await student(ctx, 160);
+    const r = await redeem(ctx, uid, "free-kopi");
+    await confirm(ctx, "u-seller-drinks", r.body.code);
+    const again = await confirm(ctx, "u-seller-drinks", r.body.code);
+    expect(again.status).toBe(409);
+    expect(again.body.message).toMatch(/^Already confirmed here at \d{1,2}:\d{2}/);
+    const elsewhere = await confirm(ctx, "u-seller-noodles", r.body.code);
+    expect(elsewhere.body.message).toBe("This code has already been used.");
+  });
+
+  it("explains letters that never appear in codes", async () => {
+    const ctx = await fresh();
+    const res = await confirm(ctx, "u-seller-drinks", "AB0-1OL");
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe("Codes never use O, I, L, 0 or 1. Check the letters with the student.");
+  });
+
+  it("the issued cost is the stored cost", async () => {
+    const ctx = await fresh();
+    const uid = await student(ctx, 160);
+    const r = await redeem(ctx, uid, "free-kopi");
+    expect(r.body.cost).toBe((ctx.raw.prepare("SELECT cost FROM redemptions WHERE id=?").get(r.body.id) as any).cost);
+  });
+});

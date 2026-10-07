@@ -128,3 +128,13 @@ export function redeemBlock(r: { cost: number; left_this_week: number | null }, 
   if (balance < r.cost) return `Need ${r.cost - balance} more`;
   return null;
 }
+
+const DAY_MS = 86_400_000;
+const SG = 8 * 3_600_000;
+/** "5 Oct – 11 Oct": last week's SGT Monday to Sunday, for the Today recap entry. */
+export function lastWeekRange(now: number): string {
+  const day = Math.floor((now + SG) / DAY_MS) * DAY_MS - SG;
+  const monday = day - ((new Date(day + SG).getUTCDay() + 6) % 7) * DAY_MS;
+  return `${weekLabel(monday - 7 * DAY_MS)} – ${weekLabel(monday - DAY_MS)}`;
+}
+export const recapEmpty = (week: "last" | "this"): string => (week === "this" ? "Nothing logged yet this week." : "Nothing logged that week.");

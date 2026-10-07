@@ -2,9 +2,18 @@
 export const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const VALID = new RegExp(`^[${CODE_ALPHABET}]{6}$`);
 
-export function newCode(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(6));
-  return Array.from(bytes, (b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join("");
+const randomBytes = (n: number) => crypto.getRandomValues(new Uint8Array(n));
+/** Bytes ≥ 248 are skipped so each of the 31 characters is equally likely (248 = 8 × 31). */
+const LIMIT = Math.floor(256 / CODE_ALPHABET.length) * CODE_ALPHABET.length;
+
+export function newCode(rand: (n: number) => Uint8Array = randomBytes): string {
+  let out = "";
+  while (out.length < 6) {
+    for (const b of rand(6)) {
+      if (b < LIMIT && out.length < 6) out += CODE_ALPHABET[b % CODE_ALPHABET.length];
+    }
+  }
+  return out;
 }
 
 /** "k7p-q2m" → "K7PQ2M"; null unless it's exactly 6 alphabet characters. */

@@ -6,7 +6,7 @@ export const WEEKS = 8;
 
 export type InsightAct = {
   user_id: string; created_at: number; type: string; source: string; verified: number; low_carbon: number | null;
-  kg_co2e: number | null; stall_id: string | null; item_name: string | null; detail: Record<string, unknown>;
+  kg_co2e: number | null; stall_id: string | null; item_id?: string | null; item_name: string | null; detail: Record<string, unknown>;
 };
 /** The fields kg-saved and meal counts need; recap passes plain activity rows. */
 export type MealLike = Pick<InsightAct, "type" | "verified" | "low_carbon" | "kg_co2e">;
@@ -21,7 +21,7 @@ export type ImpactPayload = {
 };
 export type AdminPayload = {
   stalls: { id: string; name: string; this_week: Stats; last_week: Stats }[];
-  top_dishes: { name: string; count: number; low_carbon: boolean }[];
+  top_dishes: { name: string; stall_name: string | null; count: number; low_carbon: boolean }[];
   weeks: { week_start: number; verified_meals: number; low_carbon_share: number | null; photo_meals: number; trips: { walk: number; shuttle: number; car: number } }[];
 };
 
@@ -73,7 +73,9 @@ export function underBudget(rows: BudgetRow[], now: number): UnderBudget | null 
   let students = 0;
   let below = 0;
   for (const list of byUser.values()) {
-    if (!list.some((r) => r.kg_co2e != null && r.created_at >= lastStart && r.created_at < lastStart + WEEK)) continue;
+    // Needs some footprint last week: a week of only walks (0 kg) would count as "under" by the whole target.
+    const lastKg = list.reduce((n, r) => (r.kg_co2e != null && r.created_at >= lastStart && r.created_at < lastStart + WEEK ? n + r.kg_co2e : n), 0);
+    if (lastKg <= 0) continue;
     // Last week must lie wholly after the baseline week; a part-week overlapping it is trivially "under".
     if (list[0].user_created_at + WEEK > lastStart) continue;
     const b = computeBudget({ createdAt: list[0].user_created_at, now, acts: list });
@@ -115,16 +117,19 @@ export function adminInsights(input: { acts: InsightAct[]; stalls: { id: string;
   const weeks = weekStarts(now);
   const cur = weeks[weeks.length - 1];
   const week = inRange(acts, cur, now + 1);
-  const dishes = new Map<string, { name: string; count: number; low_carbon: boolean }>();
+  // Keyed by item, not name: two stalls can both sell "Chicken rice".
+  const stallName = new Map(stalls.map((s) => [s.id, s.name]));
+  const dishes = new Map<string, { name: string; stall_name: string | null; count: number; low_carbon: boolean }>();
   for (const a of verifiedMeals(week)) {
     if (!a.item_name) continue;
-    const d = dishes.get(a.item_name) ?? { name: a.item_name, count: 0, low_carbon: a.low_carbon === 1 };
+    const key = a.item_id ?? `${a.stall_id}:${a.item_name}`;
+    const d = dishes.get(key) ?? { name: a.item_name, stall_name: a.stall_id ? stallName.get(a.stall_id) ?? null : null, count: 0, low_carbon: a.low_carbon === 1 };
     d.count++;
-    dishes.set(a.item_name, d);
+    dishes.set(key, d);
   }
   return {
     stalls: stalls.map((s) => ({ id: s.id, name: s.name, ...stallInsights(acts, s.id, now) })),
-    top_dishes: [...dishes.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)).slice(0, 5),
+    top_dishes: [...dishes.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name) || (a.stall_name ?? "").localeCompare(b.stall_name ?? "")).slice(0, 5),
     weeks: weeks.map((w) => {
       const a = inRange(acts, w, w + WEEK);
       const trips = (mode: string) => a.filter((x) => x.type === "trip" && x.detail.mode === mode).length;

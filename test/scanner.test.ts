@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { CAMERA_BLOCKED, CAMERA_FAILED, runScanner, type ScanDeps } from "../src/app/scanner";
+import { CAMERA_BLOCKED, CAMERA_ENDED, CAMERA_FAILED, runScanner, SCANNER_LOAD_FAILED, type ScanDeps } from "../src/app/scanner";
 
 const tick = () => new Promise((r) => setTimeout(r, 5));
 function deferred<T>() {
@@ -79,5 +79,26 @@ describe("runScanner", () => {
     await tick();
     expect(blocked.deps.onError).toHaveBeenCalledWith(CAMERA_BLOCKED);
     expect(missing.deps.onError).toHaveBeenCalledWith(CAMERA_FAILED);
+  });
+});
+
+describe("runScanner: stopped camera and failed download", () => {
+  it("says so when the phone stops the camera mid-scan (lock, app switch)", async () => {
+    const listeners: Record<string, () => void> = {};
+    const track = { stop: vi.fn(), addEventListener: (ev: string, fn: () => void) => (listeners[ev] = fn) };
+    const { deps } = fakes({ openCamera: vi.fn(async () => ({ getTracks: () => [track] })) });
+    runScanner(deps);
+    await tick();
+    listeners.ended();
+    expect(deps.onError).toHaveBeenCalledWith(CAMERA_ENDED);
+    expect(track.stop).toHaveBeenCalled();
+  });
+
+  it("tells a seller with an out-of-date page to reload, not to fix the camera", async () => {
+    const { deps } = fakes({ loadDecoder: async () => { throw new TypeError("Failed to fetch dynamically imported module"); } });
+    runScanner(deps);
+    await tick();
+    expect(deps.onError).toHaveBeenCalledWith(SCANNER_LOAD_FAILED);
+    expect(deps.openCamera).not.toHaveBeenCalled();
   });
 });
