@@ -4,3 +4,5 @@ dist
 .dev.vars
 seed/seed.sql
 .DS_Store
+.claude/
+.superpowers/
