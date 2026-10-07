@@ -27,7 +27,7 @@ describe("bestSwap", () => {
     });
   });
   it("falls back to the lightest low-carbon meal anywhere when the stall has none", () => {
-    const m = [...menu, { id: "beef", name: "Beef hor fun", stall_id: "beefstall", kind: "meal", kind: "meal", kg_co2e: 5.7, low_carbon: 0 }];
+    const m = [...menu, { id: "beef", name: "Beef hor fun", stall_id: "beefstall", kind: "meal", kg_co2e: 5.7, low_carbon: 0 }];
     expect(bestSwap(["beef"], m)).toEqual({ from: "Beef hor fun", to: "Vegetarian noodles with tofu", saves_kg: 5.31 });
   });
   it("ignores drinks and items missing from the menu", () => {

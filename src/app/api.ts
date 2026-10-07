@@ -17,7 +17,7 @@ export async function api<T>(path: string, body?: unknown, opts: { fresh?: boole
     body: body === undefined ? undefined : JSON.stringify(body),
     credentials: "same-origin",
   });
-  const data = await res.json().catch(() => ({}));
+  const data = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
   if (!res.ok) throw new ApiError(res.status, data.error ?? "unknown", data.message ?? "Something went wrong.");
   return data as T;
 }

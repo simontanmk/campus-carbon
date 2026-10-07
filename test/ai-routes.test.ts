@@ -222,6 +222,6 @@ describe("upload size", () => {
       body: big,
     }, ctx.env);
     expect(res.status).toBe(413);
-    expect((await res.json()).error).toBe("too_large");
+    expect(((await res.json()) as { error: string }).error).toBe("too_large");
   });
 });

@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "deploy": "npm run build && wrangler deploy",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.app.json && tsc -p tsconfig.worker.json",
+    "typecheck": "tsc -p tsconfig.app.json && tsc -p tsconfig.worker.json && tsc -p tsconfig.json",
     "cf-typegen": "wrangler types",
     "seed:sql": "node seed/build-sql.ts > seed/seed.sql",
     "db:local": "wrangler d1 migrations apply campus-carbon --local && npm run seed:sql && wrangler d1 execute campus-carbon --local --file seed/seed.sql",

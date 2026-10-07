@@ -7,7 +7,7 @@ export async function decodeImage(raw: unknown): Promise<{ mime: string; base64:
   const { mime, base64 } = raw as { mime?: unknown; base64?: unknown };
   if (typeof mime !== "string" || !MIMES.includes(mime)) return { error: "invalid" };
   if (typeof base64 !== "string" || base64.length === 0 || base64.length > MAX_BASE64 || !/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) return { error: "invalid" };
-  let bytes: Uint8Array;
+  let bytes: Uint8Array<ArrayBuffer>;
   try {
     const bin = atob(base64);
     bytes = new Uint8Array(bin.length);

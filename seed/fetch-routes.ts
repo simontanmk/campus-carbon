@@ -9,7 +9,7 @@ async function osrm(profile: "foot" | "car", a: { lat: number; lon: number }, b:
   const url = `https://routing.openstreetmap.de/${base}/${a.lon},${a.lat};${b.lon},${b.lat}?overview=false`;
   const res = await fetch(url, { headers: UA });
   if (!res.ok) throw new Error(`${profile} ${res.status} for ${url}`);
-  const r = (await res.json()).routes[0];
+  const r = ((await res.json()) as { routes: { distance: number; duration: number }[] }).routes[0];
   return { km: r.distance / 1000, min: r.duration / 60 };
 }
 
