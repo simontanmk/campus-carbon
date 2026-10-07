@@ -149,3 +149,18 @@ describe("recapLines", () => {
     expect(recapLines({ ...d, week: "this" }).extras).toContain("currently #3 of 24");
   });
 });
+import { mmss, redeemBlock, showCode } from "../src/app/copy";
+describe("rewards copy", () => {
+  it("shows codes with a dash and times as m:ss", () => {
+    expect(showCode("K7PQ2M")).toBe("K7P-Q2M");
+    expect(mmss(581)).toBe("9:41");
+    expect(mmss(5)).toBe("0:05");
+    expect(mmss(-3)).toBe("0:00");
+  });
+  it("says why a reward can't be redeemed, most pressing first", () => {
+    expect(redeemBlock({ cost: 150, left_this_week: 3 }, 400, true)).toBe("Use your current code first");
+    expect(redeemBlock({ cost: 150, left_this_week: 0 }, 400, false)).toBe("All gone this week");
+    expect(redeemBlock({ cost: 150, left_this_week: null }, 130, false)).toBe("Need 20 more");
+    expect(redeemBlock({ cost: 150, left_this_week: null }, 150, false)).toBeNull();
+  });
+});

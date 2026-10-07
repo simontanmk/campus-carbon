@@ -13,6 +13,8 @@ import { AdminInsights } from "./screens/AdminInsights";
 import { Welcome } from "./screens/Welcome";
 import { Impact } from "./screens/Impact";
 import { Recap } from "./screens/Recap";
+import { Rewards } from "./screens/Rewards";
+import { AdminRewards } from "./screens/AdminRewards";
 import { Log } from "./screens/Log";
 import { Missions } from "./screens/Missions";
 import { Ranks } from "./screens/Ranks";
@@ -50,6 +52,7 @@ export function App() {
       {path === "/admin/stalls" && role === "admin" && <AdminStalls />}
       {path === "/admin/settings" && role === "admin" && <AdminSettings />}
       {path === "/admin/insights" && role === "admin" && <AdminInsights />}
+      {path === "/admin/rewards" && role === "admin" && <AdminRewards />}
       {path === "/admin" && me.can_switch && <Admin isAdmin={role === "admin"} />}
       {((path.startsWith("/admin/") && role !== "admin") || (path === "/admin" && !me.can_switch)) && (
         <div className="result">
@@ -64,7 +67,8 @@ export function App() {
       {main && student && path === "/log" && <Log />}
       {main && student && path === "/missions" && <Missions />}
       {main && student && path === "/ranks" && <Ranks />}
-      {main && student && !["/log", "/missions", "/ranks"].includes(path) && <Home user={me.user} />}
+      {main && student && path === "/rewards" && <Rewards />}
+      {main && student && !["/log", "/missions", "/ranks", "/rewards"].includes(path) && <Home user={me.user} />}
       {main && role === "admin" && <Admin isAdmin={role === "admin"} />}
       {student && main && <TabBar path={path} />}
     </div>

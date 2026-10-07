@@ -15,6 +15,7 @@ export function Stall() {
   const [active, setActive] = useState<(Created & { item: Item; qr: string; local_expires_at: number }) | null>(null);
   const [mode, setMode] = useState<"qr" | "nfc">("qr");
   const [refresh, setRefresh] = useState(0);
+  const [redeeming, setRedeeming] = useState(false);
 
   useEffect(() => {
     api<StallData>("/stall").then(setData).catch((e) => setError(e instanceof ApiError ? e.message : "Couldn't load stall."));
@@ -77,6 +78,8 @@ export function Stall() {
         ))}
       </div>
       <p className="muted" style={{ textAlign: "center" }}>{mode === "nfc" ? "Tap the item sold, then ask the customer to tap the sticker" : "Tap the item sold to show a code"}</p>
+      <button className="btn btn-secondary" onClick={() => setRedeeming(true)}>Redeem a reward</button>
+      {redeeming && <RedeemSheet onClose={() => setRedeeming(false)} />}
       {active && <QrSheet active={active} byo={byo} onClose={close} onRegenerate={() => sell(active.item)} />}
     </>
   );
@@ -224,6 +227,63 @@ function StallWeek({ refresh }: { refresh: number }) {
         {cell(String(d.this_week.meals), "meals claimed", String(d.last_week.meals))}
         {cell(pct(d.this_week.low_carbon_share), "low-carbon", pct(d.last_week.low_carbon_share))}
         {cell(String(d.this_week.byo), "own containers", String(d.last_week.byo))}
+      </div>
+    </div>
+  );
+}
+
+function RedeemSheet({ onClose }: { onClose: () => void }) {
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<{ reward_name: string; student_name: string } | null>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      setDone(await api<{ reward_name: string; student_name: string }>("/stall/redeem", { code }));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't redeem. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="sheet-backdrop" onClick={done ? onClose : undefined}>
+      <div className="sheet glass" onClick={(e) => e.stopPropagation()}>
+        <h2 className="title">Redeem a reward</h2>
+        {done ? (
+          <>
+            <svg className="check" width="92" height="92" viewBox="0 0 92 92" aria-hidden="true">
+              <circle cx="46" cy="46" r="40" fill="none" stroke="var(--accent)" strokeWidth="5" />
+              <path d="M30 47 l11 11 l21 -23" fill="none" stroke="var(--accent)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <p className="body" style={{ color: "var(--text)" }}>{done.reward_name} for {done.student_name}</p>
+            <button className="btn" onClick={onClose}>Done</button>
+          </>
+        ) : (
+          <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <input
+              type="text"
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              placeholder="ABC-DEF"
+              maxLength={7}
+              autoCapitalize="characters"
+              autoComplete="off"
+              autoFocus
+              aria-label="Reward code"
+              style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 28, letterSpacing: "0.08em", textAlign: "center" }}
+            />
+            {error && <p className="error">{error}</p>}
+            <button className="btn" disabled={busy || code.replace(/[^A-Za-z0-9]/g, "").length !== 6}>Confirm</button>
+            <button type="button" className="btn btn-secondary" onClick={onClose}>Close</button>
+          </form>
+        )}
       </div>
     </div>
   );

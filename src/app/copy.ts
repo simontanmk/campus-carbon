@@ -115,3 +115,16 @@ export function recapLines(d: RecapData) {
     footnote: "kg saved is an estimate vs an average campus meal",
   };
 }
+
+export const showCode = (code: string): string => `${code.slice(0, 3)}-${code.slice(3)}`;
+export const mmss = (seconds: number): string => {
+  const s = Math.max(0, Math.floor(seconds));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+};
+/** Why Redeem is disabled, or null when it isn't. */
+export function redeemBlock(r: { cost: number; left_this_week: number | null }, balance: number, hasActive: boolean): string | null {
+  if (hasActive) return "Use your current code first";
+  if (r.left_this_week === 0) return "All gone this week";
+  if (balance < r.cost) return `Need ${r.cost - balance} more`;
+  return null;
+}

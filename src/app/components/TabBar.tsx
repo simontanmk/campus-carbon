@@ -5,6 +5,7 @@ const TABS = [
   { path: "/log", label: "Log" },
   { path: "/missions", label: "Missions" },
   { path: "/ranks", label: "Ranks" },
+  { path: "/rewards", label: "Rewards" },
 ];
 
 export function TabBar({ path }: { path: string }) {
