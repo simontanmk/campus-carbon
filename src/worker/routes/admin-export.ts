@@ -6,8 +6,8 @@ import { requireRole } from "../session";
 
 export const adminExport = new Hono<AppEnv>();
 const SG = 8 * 3_600_000;
-const sgIso = (ms: number) => new Date(ms + SG).toISOString().replace(/\.\d{3}Z$/, "+08:00");
-const sgDate = (ms: number) => new Date(ms + SG).toISOString().slice(0, 10);
+export const sgIso = (ms: number) => new Date(ms + SG).toISOString().replace(/\.\d{3}Z$/, "+08:00");
+export const sgDate = (ms: number) => new Date(ms + SG).toISOString().slice(0, 10);
 const HEADER = [
   "activity_id", "user_id", "category", "type", "verified", "source", "kg_co2e", "points", "low_carbon",
   "stall_id", "canteen", "item_id", "item_name", "dish", "ai", "mode", "from_id", "to_id", "distance_km", "steps", "count",

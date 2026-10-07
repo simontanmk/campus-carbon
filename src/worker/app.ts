@@ -15,6 +15,7 @@ import { progress } from "./routes/progress";
 import { insights } from "./routes/insights";
 import { recap } from "./routes/recap";
 import { rewards } from "./routes/rewards";
+import { adminRewards } from "./routes/admin-rewards";
 
 export const app = new Hono<AppEnv>().basePath("/api");
 
@@ -34,6 +35,7 @@ app.route("/", progress);
 app.route("/", insights);
 app.route("/", recap);
 app.route("/", rewards);
+app.route("/", adminRewards);
 
 app.notFound((c) => c.json({ error: "not_found", message: "Not found." }, 404));
 app.onError((err, c) => {
