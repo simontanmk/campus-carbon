@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "hono": "^4.13.10",
+    "jsqr": "^1.4.0",
     "qrcode": "^1.5.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
