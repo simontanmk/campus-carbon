@@ -218,3 +218,9 @@ Hold length: 10 minutes. It's a constant (`HOLD_MS = 600000`), not a setting.
 - The code screen will also render `code` as a QR (`qrcode`).
 - The seller's sheet gains **Scan**. It uses `BarcodeDetector` where available, and otherwise a small decoding library (for example `jsQR`) loaded on demand, then calls the same §6.2 endpoint.
 - No server changes.
+
+Implemented 2026-10-08:
+- The QR holds `CCR:<code>`.
+- jsQR 1.4.0 decodes it. It is loaded on demand, so students never download it. `BarcodeDetector` isn't used, because iOS Safari lacks it.
+- The scanner stops at the first decode and submits once.
+- Other QR codes, such as claim links, are ignored.

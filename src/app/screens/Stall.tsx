@@ -1,7 +1,7 @@
 import QRCode from "qrcode";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api";
-import { pct } from "../copy";
+import { pct, showCode } from "../copy";
 
 type Item = { id: string; name: string; kind: string; kg_co2e: number | null; low_carbon: boolean };
 type StallData = { stall: { id: string; name: string; canteen: string; active: boolean; verify_method: "qr" | "nfc" | "both" }; items: Item[] };
@@ -238,19 +238,32 @@ function RedeemSheet({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ reward_name: string; student_name: string } | null>(null);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  async function send(value: string) {
     if (busy) return;
     setBusy(true);
     setError(null);
     try {
-      setDone(await api<{ reward_name: string; student_name: string }>("/stall/redeem", { code }));
+      setDone(await api<{ reward_name: string; student_name: string }>("/stall/redeem", { code: value }));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't redeem. Try again.");
     } finally {
       setBusy(false);
     }
   }
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    send(code);
+  }
+  const [scanning, setScanning] = useState(false);
+  const onCode = useCallback((c: string) => {
+    setScanning(false);
+    setCode(showCode(c));
+    send(c);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- send reads fresh state through setters
+  const onScanError = useCallback((m: string) => {
+    setScanning(false);
+    setError(m);
+  }, []);
 
   return (
     <div className="sheet-backdrop" onClick={done ? onClose : undefined}>
@@ -267,6 +280,14 @@ function RedeemSheet({ onClose }: { onClose: () => void }) {
           </>
         ) : (
           <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {scanning ? (
+              <>
+                <Scanner onCode={onCode} onError={onScanError} />
+                <button type="button" className="btn btn-secondary" onClick={() => setScanning(false)}>Type the code instead</button>
+              </>
+            ) : (
+              <button type="button" className="btn" onClick={() => { setError(null); setScanning(true); }}>Scan code</button>
+            )}
             <input
               type="text"
               value={code}
@@ -280,11 +301,64 @@ function RedeemSheet({ onClose }: { onClose: () => void }) {
               style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 28, letterSpacing: "0.08em", textAlign: "center" }}
             />
             {error && <p className="error">{error}</p>}
-            <button className="btn" disabled={busy || code.replace(/[^A-Za-z0-9]/g, "").length !== 6}>Confirm</button>
+            <button className="btn btn-secondary" disabled={busy || code.replace(/[^A-Za-z0-9]/g, "").length !== 6}>Confirm</button>
             <button type="button" className="btn btn-secondary" onClick={onClose}>Close</button>
           </form>
         )}
       </div>
     </div>
+  );
+}
+
+/** Camera view that stops at the first reward QR it reads. jsQR loads only when the seller opens it. */
+function Scanner({ onCode, onError }: { onCode: (code: string) => void; onError: (message: string) => void }) {
+  const video = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    let stream: MediaStream | null = null;
+    let timer = 0;
+    let stopped = false;
+    const stop = () => {
+      stopped = true;
+      clearTimeout(timer);
+      stream?.getTracks().forEach((t) => t.stop());
+    };
+    (async () => {
+      try {
+        const { decodeFrame } = await import("../qrDecode");
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+        if (stopped) return stop();
+        const v = video.current!;
+        v.srcObject = stream;
+        await v.play();
+        const canvas = document.createElement("canvas");
+        const g = canvas.getContext("2d", { willReadFrequently: true })!;
+        const scan = () => {
+          if (stopped) return;
+          if (v.videoWidth) {
+            const w = 480;
+            const h = Math.round(v.videoHeight * (w / v.videoWidth));
+            canvas.width = w;
+            canvas.height = h;
+            g.drawImage(v, 0, 0, w, h);
+            const code = decodeFrame(g.getImageData(0, 0, w, h).data, w, h);
+            if (code) {
+              stop(); // one confirm per scan, even if the QR stays in view
+              onCode(code);
+              return;
+            }
+          }
+          timer = window.setTimeout(scan, 200);
+        };
+        scan();
+      } catch (e) {
+        stop();
+        onError((e as Error).name === "NotAllowedError" ? "Camera blocked. Allow camera access, or type the code." : "Couldn't open the camera. Type the code instead.");
+      }
+    })();
+    return stop;
+  }, [onCode, onError]);
+  return (
+    <video ref={video} muted playsInline aria-label="Camera view for scanning a reward code"
+      style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: 14, background: "#000" }} />
   );
 }

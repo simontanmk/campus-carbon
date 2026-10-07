@@ -1,7 +1,9 @@
+import QRCode from "qrcode";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api";
 import { mmss, redeemBlock, showCode } from "../copy";
 
+import { redeemQrText } from "../redeemQr";
 import { withIssued, type Active, type Reward, type RewardsData as Data } from "../rewardsState";
 
 const day = (ms: number) => new Date(ms).toLocaleDateString("en-SG", { day: "numeric", month: "short", timeZone: "Asia/Singapore" });
@@ -97,6 +99,10 @@ function LiveCode({ active, onEnd }: { active: Active; onEnd: (redeemed: boolean
   const [localExpires] = useState(() => Date.now() + (active.expires_at - active.server_now));
   const [now, setNow] = useState(Date.now());
   const ended = useRef(false);
+  const [qr, setQr] = useState("");
+  useEffect(() => {
+    QRCode.toDataURL(redeemQrText(active.code), { margin: 1, width: 360 }).then(setQr).catch(() => {});
+  }, [active.code]);
   const end = useCallback((redeemed: boolean) => {
     if (ended.current) return;
     ended.current = true;
@@ -133,6 +139,7 @@ function LiveCode({ active, onEnd }: { active: Active; onEnd: (redeemed: boolean
     <div className="card" style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: 8 }}>
       <div className="eyebrow">{active.reward_name} · {active.cost} points</div>
       <div style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 44, letterSpacing: "0.08em" }}>{showCode(active.code)}</div>
+      {qr && <img src={qr} alt={`QR code for ${showCode(active.code)}`} width={180} height={180} style={{ alignSelf: "center" }} />}
       <div className="muted">Show this to the seller · <span style={{ fontVariantNumeric: "tabular-nums" }}>{mmss(left)}</span> left</div>
       <button className="link-btn" style={{ alignSelf: "center" }} onClick={cancel}>Cancel</button>
     </div>

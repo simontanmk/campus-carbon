@@ -33,6 +33,7 @@ Student devices: one iPhone, one Android.
 - [ ] Projector: open /impact on the presentation laptop (no login needed) → big "kg saved" number, 8-week bars, QR in the corner; claim a meal on a phone → within 30 s the numbers move
 - [ ] Recap card: Today → "Your week in review" → Share → Instagram Story (iPhone and Android) shows the 1080×1920 card; WhatsApp sends it as an image; on a laptop the button is Download
 - [ ] Rewards: student Rewards tab → Redeem "Free kopi" → code shows with a 10-minute countdown → Drinks seller phone → "Redeem a reward" → type the code → "Free kopi for <name>"; the student's card flips to Redeemed and the balance drops; Ranks unchanged
+- [ ] Rewards QR: seller phone → Redeem a reward → Scan code → allow camera → point at the student's QR → "<reward> for <name>" without typing; deny camera once and check typing still works
 - [ ] Admin → Rewards: adjust costs/stock for the demo; "Download redemptions (CSV)"
 - [ ] Admin → Insights shows each stall this week vs last week; a seller sees "Your stall this week" above the menu
 - [ ] Admin → Export activities (CSV) opens in a spreadsheet; verified and source columns present
