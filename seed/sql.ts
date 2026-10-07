@@ -3,7 +3,7 @@ import { BADGES } from "../src/worker/lib/badges.ts";
 import { MISSIONS } from "../src/worker/lib/missions.ts";
 import { DEFAULT_SETTINGS } from "../src/worker/lib/settings.ts";
 import { sgDayStart } from "../src/worker/lib/time.ts";
-import { FACTORS, ITEMS, LOCATIONS, PERSONA_HISTORY, SETTINGS, STALLS, USERS } from "./data.ts";
+import { FACTORS, ITEMS, LOCATIONS, PERSONA_HISTORY, REWARDS, SETTINGS, STALLS, USERS } from "./data.ts";
 import routes from "./routes.json" with { type: "json" };
 
 type Val = string | number | null;
@@ -49,6 +49,7 @@ export function buildSeedSql(now: number = Date.now()): string {
       ),
     );
   }
+  for (const r of REWARDS) out.push(upsert("rewards", { ...r, active: 1, created_at: now }, ["id"], []));
   for (const [key, value] of Object.entries(SETTINGS)) out.push(upsert("settings", { key, value: String(value) }, ["key"], []));
   for (const l of LOCATIONS) out.push(upsert("locations", { ...l }, ["id"], ["name", "lat", "lon"]));
   for (const r of routes as Route[]) {

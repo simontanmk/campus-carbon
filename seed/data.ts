@@ -136,3 +136,10 @@ export const PERSONA_HISTORY: Record<string, HistoryEntry[]> = {
   "u-bea": mixed,
   "u-chen": lowCarbon,
 };
+
+/** Demo rewards (spec 2026-10-07-rewards-design.md §4). Seeded once; admin edits survive re-seeding. */
+export const REWARDS = [
+  { id: "free-kopi", name: "Free kopi", cost: 150, stall_id: "drinks", weekly_stock: 20 },
+  { id: "egg-addon", name: "Free egg add-on", cost: 80, stall_id: "econ-rice", weekly_stock: null },
+  { id: "dollar-off-low", name: "$1 off a low-carbon meal", cost: 200, stall_id: null, weekly_stock: 30 },
+] as const;
