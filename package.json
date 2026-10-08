@@ -15,6 +15,8 @@
     "db:local": "wrangler d1 migrations apply campus-carbon --local && npm run seed:sql && wrangler d1 execute campus-carbon --local --file seed/seed.sql",
     "seed:routes": "node seed/fetch-routes.ts",
     "seed:rebase": "node seed/build-rebase.ts > seed/rebase.sql && wrangler d1 execute campus-carbon --remote --file seed/rebase.sql",
+    "factors:apply": "node seed/build-factors.ts > seed/factors.sql && wrangler d1 execute campus-carbon --remote --file seed/factors.sql",
+    "factors:apply:local": "node seed/build-factors.ts > seed/factors.sql && wrangler d1 execute campus-carbon --local --file seed/factors.sql",
     "seed:rebase:local": "node seed/build-rebase.ts > seed/rebase.sql && wrangler d1 execute campus-carbon --local --file seed/rebase.sql"
   },
   "dependencies": {

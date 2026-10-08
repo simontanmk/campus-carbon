@@ -22,3 +22,11 @@ export function computeKg(parts: Parts, factors: FactorTable): number | null {
 export function isLowCarbonMeal(parts: Parts): boolean {
   return !Object.keys(parts).some((k) => HIGH_CARBON_PROTEINS.includes(k) && parts[k] > 0);
 }
+
+export type Band = "green" | "amber" | "red";
+
+/** Three-band label for a meal's kg (comparison only for now): green ≤ 0.7, amber ≤ 1.4, red above. */
+export function bandOf(kg: number | null): Band | null {
+  if (kg == null) return null;
+  return kg <= 0.7 ? "green" : kg <= 1.4 ? "amber" : "red";
+}

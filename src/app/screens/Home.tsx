@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { MealPhoto } from "../components/MealPhoto";
 import { navigate } from "../router";
 import { api, type User } from "../api";
-import { activityLabel, budgetLine, budgetNote, lastWeekRange, showSwapLine, factHeadline, shortName, weekHeadline } from "../copy";
+import { activityLabel, budgetLine, budgetNote, lastWeekRange, showSwapLine, factHeadline, shortName, weekHeadline, evidenceTag } from "../copy";
 
 type Summary = {
   recap_ready: boolean;
@@ -16,7 +16,7 @@ type Summary = {
   swap: { from: string; to: string; saves_kg: number } | null;
   fact: { high: { name: string; kg: number }; low: { name: string; kg: number } } | null;
   featured: { name: string; stall_name: string; kg_co2e: number; points: number } | null;
-  recent: { type: string; points: number; kg_co2e: number | null; low_carbon: boolean | null; verified: boolean; item_name: string | null; created_at: number; detail: Record<string, unknown>; place_names: { from: string; to: string } | null }[];
+  recent: { type: string; points: number; kg_co2e: number | null; low_carbon: boolean | null; verified: boolean; source: string; item_name: string | null; created_at: number; detail: Record<string, unknown>; place_names: { from: string; to: string } | null }[];
   budget:
     | { ready: false; reason: "first_week" | "no_baseline"; ready_at: number }
     | { ready: true; overall: Line; categories: Record<"food" | "mobility" | "waste", Line>; biggest: "food" | "mobility" | "waste" | null };
@@ -116,7 +116,7 @@ export function Home({ user }: { user: User }) {
           <div className="row" key={i}>
             <span className="what">
               {activityLabel(a)}
-              {!a.verified && <span className="muted"> · self-reported</span>}
+              {evidenceTag(a) && <span className="muted"> · {evidenceTag(a)}</span>}
             </span>
             <span className={a.points > 0 ? "pts green" : "pts"} style={a.points > 0 ? undefined : { color: "var(--muted)" }}>
               {a.points > 0 ? `+${a.points}` : "0"}

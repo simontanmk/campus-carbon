@@ -3,6 +3,7 @@ import { BADGES } from "../src/worker/lib/badges.ts";
 import { MISSIONS } from "../src/worker/lib/missions.ts";
 import { DEFAULT_SETTINGS } from "../src/worker/lib/settings.ts";
 import { sgDayStart } from "../src/worker/lib/time.ts";
+import { factorSourceRows } from "./factors.ts";
 import { FACTORS, ITEMS, LOCATIONS, PERSONA_HISTORY, REWARDS, SETTINGS, STALLS, USERS } from "./data.ts";
 import routes from "./routes.json" with { type: "json" };
 
@@ -32,12 +33,12 @@ export function buildSeedSql(now: number = Date.now()): string {
   const created = sgDayStart(now) - 14 * DAY;
   const out: string[] = [];
 
-  for (const f of FACTORS) out.push(upsert("factors", { ...f }, ["key"], ["kg_per_unit", "unit", "source", "note"]));
+  out.push(...factorUpserts());
   for (const s of STALLS) out.push(upsert("stalls", { ...s, active: 1 }, ["id"], ["name", "canteen"]));
   for (const u of USERS) out.push(upsert("users", { ...u, created_at: created }, ["id"], []));
   const itemKg = new Map<string, { kg: number | null; low: number; stall: string; kind: string }>();
   for (const i of ITEMS) {
-    const kg = i.kg_override ?? computeKg(i.parts, factorTable);
+    const kg = computeKg(i.parts, factorTable);
     const low = i.kind === "meal" && isLowCarbonMeal(i.parts) ? 1 : 0;
     itemKg.set(i.id, { kg, low, stall: i.stall_id, kind: i.kind });
     out.push(
@@ -104,4 +105,33 @@ function historyInsert(cols: Record<string, Val>, createdAtExpr: string): string
   const names = [...Object.keys(cols), "created_at"];
   const values = [...Object.values(cols).map(lit), createdAtExpr];
   return `INSERT INTO activities (${names.join(", ")}) SELECT ${values.join(", ")} WHERE EXISTS (SELECT 1 FROM users WHERE id = ${lit(cols.user_id as string)}) ON CONFLICT(id) DO NOTHING;`;
+}
+
+function factorUpserts(): string[] {
+  return [
+    ...FACTORS.map((f) => upsert("factors", { ...f }, ["key"], ["kg_per_unit", "unit", "source", "note"])),
+    ...factorSourceRows().map((r) => upsert("factor_sources", { ...r }, ["dataset", "key"], ["kg_per_unit", "source", "note"])),
+  ];
+}
+
+/** kg from a JSON object of ingredient grams × the live factors, as computeKg does: NULL if empty or a factor is missing. */
+const kgFromJson = (json: string) =>
+  `(SELECT CASE WHEN COUNT(*) = 0 OR SUM(f.kg_per_unit IS NULL) > 0 THEN NULL ELSE ROUND(SUM(j.value * f.kg_per_unit / 1000.0), 2) END
+    FROM json_each(${json}) j LEFT JOIN factors f ON f.key = j.key AND f.unit = 'kg')`;
+
+/**
+ * Applies the official factor table and recalculates every stored food kg from its ingredients, so the
+ * whole history uses one table (spec 2026-10-08-combined-emission-factors-design.md §5). Safe to re-run.
+ */
+export function buildFactorsSql(): string {
+  return [
+    ...factorUpserts(),
+    // Beef hor fun's beef is Singapore's grass-fed import (spec §3); only the untouched seed recipe is changed.
+    `UPDATE items SET parts_json = '{"rice":80,"beef_herd":80,"veg":30}' WHERE id = 'beef-hor-fun' AND parts_json = '{"rice":80,"beef_dairy":80,"veg":30}';`,
+    `UPDATE items SET kg_co2e = ${kgFromJson("items.parts_json")};`,
+    `UPDATE activities SET kg_co2e = (SELECT i.kg_co2e FROM items i WHERE i.id = activities.item_id) WHERE category = 'food' AND item_id IS NOT NULL;`,
+    `UPDATE activities SET kg_co2e = ${kgFromJson("activities.detail_json, '$.parts'")} WHERE category = 'food' AND source = 'photo';`,
+    // Cached weekly nudges quote the old kg.
+    `DELETE FROM summaries;`,
+  ].join("\n") + "\n";
 }

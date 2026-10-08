@@ -7,3 +7,4 @@ seed/rebase.sql
 .DS_Store
 .claude/
 .superpowers/
+seed/factors.sql

@@ -20,9 +20,9 @@ describe("seed", () => {
   it("stores computed kg and low-carbon flags", () => {
     const { raw } = seeded();
     const row = (id: string) => raw.prepare("SELECT kg_co2e, low_carbon, kind FROM items WHERE id=?").get(id) as any;
-    expect(row("econ-veg-egg")).toEqual({ kg_co2e: 0.65, low_carbon: 1, kind: "meal" });
-    expect(row("chicken-rice")).toEqual({ kg_co2e: 1.36, low_carbon: 0, kind: "meal" });
-    expect(row("beef-hor-fun")).toEqual({ kg_co2e: 5.7, low_carbon: 0, kind: "meal" });
+    expect(row("econ-veg-egg")).toEqual({ kg_co2e: 0.52, low_carbon: 1, kind: "meal" });
+    expect(row("chicken-rice")).toEqual({ kg_co2e: 0.93, low_carbon: 0, kind: "meal" });
+    expect(row("beef-hor-fun")).toEqual({ kg_co2e: 4.04, low_carbon: 0, kind: "meal" });
     expect(row("kopi")).toEqual({ kg_co2e: 0.47, low_carbon: 0, kind: "drink" });
     expect(row("teh-o-kosong")).toEqual({ kg_co2e: null, low_carbon: 0, kind: "drink" });
   });
@@ -56,7 +56,7 @@ describe("seed", () => {
     expect((raw.prepare("SELECT active FROM stalls WHERE id='drinks'").get() as any).active).toBe(0);
     expect(raw.prepare("SELECT status, points FROM items WHERE id='kopi'").get()).toEqual({ status: "draft", points: 7 });
     expect((raw.prepare("SELECT value FROM settings WHERE key='rate_daily_max'").get() as any).value).toBe("50");
-    expect((raw.prepare("SELECT kg_per_unit FROM factors WHERE key='rice'").get() as any).kg_per_unit).toBe(4.45);
+    expect((raw.prepare("SELECT kg_per_unit FROM factors WHERE key='rice'").get() as any).kg_per_unit).toBe(2.55);
     expect((raw.prepare("SELECT COUNT(*) AS n FROM activities").get() as any).n).toBe(before);
     expect(raw.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
   });

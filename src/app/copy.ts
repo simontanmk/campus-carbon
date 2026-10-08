@@ -147,3 +147,6 @@ export function showSwapLine(nudge: string | null, swap: { to: string } | null):
 
 /** Toast after a receipt-backed container return. */
 export const receiptToast = (containers: number, points: string) => `${containers} container${containers === 1 ? "" : "s"} returned ${points}`;
+
+/** How an activity was backed, for the Recent list: nothing for seller-verified claims. */
+export const evidenceTag = (a: { verified: boolean; source?: string }) => (a.verified ? null : a.source === "receipt" ? "refund receipt" : "self-reported");

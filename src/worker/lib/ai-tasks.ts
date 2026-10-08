@@ -15,7 +15,7 @@ export function cleanParts(raw: unknown): Parts {
   return out;
 }
 
-const PARTS_RULES = `Ingredient keys allowed (grams, dry weight for rice and noodles): ${FACTOR_KEYS.join(", ")}. "veg" covers all vegetables. Use beef_dairy for beef unless told otherwise. Omit anything else (oil, sauce, spices). Do not estimate carbon.`;
+const PARTS_RULES = `Ingredient keys allowed (grams, dry weight for rice and noodles): ${FACTOR_KEYS.join(", ")}. "veg" covers all vegetables. Use beef_herd for beef unless told otherwise. Omit anything else (oil, sauce, spices). Do not estimate carbon.`;
 
 // Trip -----------------------------------------------------------------------------------------
 export const TRIP_PROMPT = (places: { id: string; name: string }[]) =>

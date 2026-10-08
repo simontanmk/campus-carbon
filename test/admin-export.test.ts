@@ -18,9 +18,9 @@ describe("GET /api/admin/export.csv", () => {
     expect(res.headers.get("content-disposition")).toMatch(/attachment; filename="activities-\d{4}-\d{2}-\d{2}\.csv"/);
     const text = await res.text();
     const [header, ...lines] = text.trim().split("\r\n");
-    expect(header).toBe("activity_id,user_id,category,type,verified,source,kg_co2e,points,low_carbon,stall_id,canteen,item_id,item_name,dish,ai,mode,from_id,to_id,distance_km,steps,count,image_hash,token_id,token_created_at_sgt,confirmed_at_sgt,confirm_latency_ms,created_at_sgt,week_start_sgt,receipt_provider,refunded_at_sgt");
+    expect(header).toBe("activity_id,user_id,category,type,verified,source,kg_co2e,points,low_carbon,stall_id,canteen,item_id,item_name,dish,ai,mode,from_id,to_id,distance_km,steps,count,image_hash,token_id,token_created_at_sgt,confirmed_at_sgt,confirm_latency_ms,created_at_sgt,week_start_sgt,receipt_provider,refunded_at_sgt,kg_sg_only,kg_owid_only");
     const row = lines.find((l) => l.startsWith("p1,"))!;
-    expect(row).toBe('p1,u-alex,food,meal,0,photo,0.39,5,1,,,,,"Noodles, with ""tofu""",live,,,,,,,,,,,,2026-09-29T12:00:00+08:00,2026-09-28,,');
+    expect(row).toBe('p1,u-alex,food,meal,0,photo,0.39,5,1,,,,,"Noodles, with ""tofu""",live,,,,,,,,,,,,2026-09-29T12:00:00+08:00,2026-09-28,,,,');
     expect(lines.length).toBe((ctx.raw.prepare("SELECT COUNT(*) AS n FROM activities").get() as any).n);
   });
 
@@ -45,6 +45,9 @@ describe("GET /api/admin/export.csv", () => {
     expect([get(byType("trip"), "from_id"), get(byType("trip"), "to_id"), get(byType("trip"), "mode")]).toEqual(["hive", "north-spine", "walk"]);
     const meal = byType("meal");
     expect(get(meal, "token_id")).toBe(t.id);
+    // Vegetarian noodles with tofu under each single-source table, beside the official combined 0.35.
+    expect([get(meal, "kg_co2e"), get(meal, "kg_sg_only"), get(meal, "kg_owid_only")]).toEqual(["0.35", "0.34", "0.39"]);
+    expect([get(byType("trip"), "kg_sg_only"), get(byType("trip"), "kg_owid_only")]).toEqual(["", ""]);
     expect(get(meal, "source")).toBe("nfc");
     expect(Number(get(meal, "confirm_latency_ms"))).toBeGreaterThanOrEqual(0);
     expect(get(meal, "confirmed_at_sgt")).toMatch(/\+08:00$/);

@@ -39,7 +39,7 @@ Live demo: https://campus-carbon.stan322.workers.dev, plus the projector page at
 - **Progress:** missions, streaks, badges, a weekly leaderboard, a personal weekly carbon budget (85% of the student's first week), and a shareable weekly recap card.
 - **Rewards:** a separate balance to spend, 6-character codes or QR codes confirmed at the stall (typed or scanned by camera), and weekly stock limits.
 - **Admin:** stalls and items editor, menu import from a photo, points and limits, rewards editor, insights, and CSV exports.
-- **AI (Gemini, optional):** typed trips, meal photos, refund receipts, menu import, and a weekly nudge. The AI never decides kg or the low-carbon flag; those come from emission factors (Poore & Nemecek via Our World in Data, and DESNZ 2022).
+- **AI (Gemini, optional):** typed trips, meal photos, refund receipts, menu import, and a weekly nudge. The AI never decides kg or the low-carbon flag; those come from emission factors. Food uses Singapore values (Ecosperity 2019) plus land-use change from Poore & Nemecek via Our World in Data; transport uses DESNZ 2022. See `docs/factor-comparison.md`.
 
 ## Stack
 

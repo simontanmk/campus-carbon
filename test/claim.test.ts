@@ -13,9 +13,9 @@ describe("POST /api/claim — success", () => {
     const t = await makeToken(ctx, "u-seller-econ", "econ-veg-egg", true);
     const res = await ctx.req("/api/claim", { as: "u-alex", body: { t: t.token } });
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ item_name: "Economy rice: 2 veg + egg", low_carbon: true, kg_co2e: 0.65, points: 35 });
+    expect(res.body).toMatchObject({ item_name: "Economy rice: 2 veg + egg", low_carbon: true, kg_co2e: 0.52, points: 35 });
     expect(res.body.activities).toEqual([
-      { type: "meal", points: 20, kg_co2e: 0.65 },
+      { type: "meal", points: 20, kg_co2e: 0.52 },
       { type: "byo", points: 15, kg_co2e: null },
     ]);
     const acts = ctx.raw.prepare("SELECT category, type, verified, source, token_id, low_carbon FROM activities WHERE user_id='u-alex' AND token_id IS NOT NULL ORDER BY type DESC").all();
@@ -31,7 +31,7 @@ describe("POST /api/claim — success", () => {
     const t = await makeToken(ctx, "u-seller-noodles", "chicken-rice");
     const res = await ctx.req("/api/claim", { as: "u-alex", body: { t: t.token } });
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ low_carbon: false, kg_co2e: 1.36, points: 0 });
+    expect(res.body).toMatchObject({ low_carbon: false, kg_co2e: 0.93, points: 0 });
   });
 
   it("records a drink with unknown kg as NULL, not 0", async () => {

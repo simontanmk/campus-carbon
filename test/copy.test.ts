@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  evidenceTag,
   receiptToast,
   activityLabel,
   budgetLine,
@@ -204,5 +205,14 @@ describe("receiptToast", () => {
   it("names the containers and the points", () => {
     expect(receiptToast(1, "· +5")).toBe("1 container returned · +5");
     expect(receiptToast(3, "· +10, daily limit reached")).toBe("3 containers returned · +10, daily limit reached");
+  });
+});
+
+describe("evidenceTag", () => {
+  it("tags receipts and self-reports, and leaves verified claims bare", () => {
+    expect(evidenceTag({ verified: true, source: "qr" })).toBeNull();
+    expect(evidenceTag({ verified: false, source: "receipt" })).toBe("refund receipt");
+    expect(evidenceTag({ verified: false, source: "manual" })).toBe("self-reported");
+    expect(evidenceTag({ verified: false, source: "photo" })).toBe("self-reported");
   });
 });

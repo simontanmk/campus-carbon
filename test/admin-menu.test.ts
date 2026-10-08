@@ -24,7 +24,7 @@ describe("admin menu import", () => {
     expect(res.status).toBe(201);
     expect(res.body.source).toBe("live");
     expect(res.body.items).toHaveLength(2);
-    expect(res.body.items[0]).toMatchObject({ name: "Vegetable fried rice with egg", kind: "meal", status: "draft", low_carbon: true, kg_co2e: 0.63 });
+    expect(res.body.items[0]).toMatchObject({ name: "Vegetable fried rice with egg", kind: "meal", status: "draft", low_carbon: true, kg_co2e: 0.48 });
     expect(res.body.items[1]).toMatchObject({ name: "Chicken cutlet rice", low_carbon: false });
     const live = (await ctx.req("/api/stall", { as: "u-seller-econ" })).body.items.map((i: any) => i.name);
     expect(live).not.toContain("Vegetable fried rice with egg");
@@ -35,7 +35,7 @@ describe("admin menu import", () => {
     const drafts = (await ctx.req("/api/admin/menu/photo", { as: "u-admin", body: { stall_id: "econ-rice", image: photo } })).body.items;
     const id = drafts[1].id;
     const edited = await ctx.req(`/api/admin/items/${id}`, { as: "u-admin", body: { name: "Tofu cutlet rice", parts: { rice: 80, tofu: 100, veg: 30 } } });
-    expect(edited.body.item).toMatchObject({ name: "Tofu cutlet rice", low_carbon: true, kg_co2e: 0.68, status: "draft" });
+    expect(edited.body.item).toMatchObject({ name: "Tofu cutlet rice", low_carbon: true, kg_co2e: 0.54, status: "draft" });
     await ctx.req(`/api/admin/items/${id}`, { as: "u-admin", body: { status: "live" } });
     const live = (await ctx.req("/api/stall", { as: "u-seller-econ" })).body.items.map((i: any) => i.name);
     expect(live).toContain("Tofu cutlet rice");
@@ -88,7 +88,7 @@ describe("admin menu import", () => {
     const ctx = await setup();
     const res = await ctx.req("/api/admin/items", { as: "u-admin", body: { stall_id: "noodles", name: "Tofu laksa", kind: "meal", parts: { wheat: 100, tofu: 80, veg: 60 } } });
     expect(res.status).toBe(201);
-    expect(res.body.item).toMatchObject({ name: "Tofu laksa", status: "draft", low_carbon: true, kg_co2e: 0.44 });
+    expect(res.body.item).toMatchObject({ name: "Tofu laksa", status: "draft", low_carbon: true, kg_co2e: 0.38 });
     expect(res.body.item.id).toMatch(/^noodles-tofu-laksa-[0-9a-f]{8}$/);
     expect((await ctx.req("/api/admin/items", { as: "u-admin", body: { stall_id: "noodles", name: "", kind: "meal", parts: {} } })).body.error).toBe("invalid_item");
   });

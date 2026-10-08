@@ -11,6 +11,8 @@ Open the app in Safari or Chrome. Don't open it inside a chat app's built-in bro
 
 ## Before the demo
 
+- [ ] **Emission factors:** the live app uses the combined Singapore + land-use table (applied 8 Oct 2026). If you reset or reseed a database, run `npm run factors:apply` (or `factors:apply:local`) afterwards.
+
 - [ ] **Admin sign-in (once):** set a passcode of 12 or more characters as a Cloudflare secret. You'll be asked to type it; it's never stored in the repo:
       `npx wrangler secret put ADMIN_PASSCODE`
 - [ ] **Make a phone admin:** on that phone, open `/admin/login`, enter the passcode → Admin. To make it a seller phone, go to Switch persona → the stall's seller. If switching expires (12 h) or someone taps "Stop switching", sign in at `/admin/login` again.
@@ -33,7 +35,7 @@ Open the app in Safari or Chrome. Don't open it inside a chat app's built-in bro
 - [ ] Rescanning a used QR says "already used".
 - [ ] After 90 s the seller sees "This code expired"; "New code" works.
 - [ ] Same student, same stall, second claim within 10 minutes: rate-limit message.
-- [ ] Chicken rice claim: 0 points, 1.36 kg shown.
+- [ ] Chicken rice claim: 0 points, 0.93 kg shown.
 - [ ] The seller's "Your stall this week" panel (meals, low-carbon %, own containers, with last week's figures) goes up after a claim.
 
 ## Claims: NFC sticker

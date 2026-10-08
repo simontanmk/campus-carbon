@@ -28,7 +28,7 @@ me.get("/me/summary", requireRole("student"), async (c) => {
     .first<{ total: number; week: number; meals_week: number; low_week: number; kg_week: number }>();
   const { results } = await db
     .prepare(
-      `SELECT a.type, a.points, a.kg_co2e, a.low_carbon, a.verified, a.created_at, a.detail_json, i.name AS item_name,
+      `SELECT a.type, a.points, a.kg_co2e, a.low_carbon, a.verified, a.source, a.created_at, a.detail_json, i.name AS item_name,
               lf.name AS from_name, lt.name AS to_name
        FROM activities a
        LEFT JOIN items i ON i.id = a.item_id

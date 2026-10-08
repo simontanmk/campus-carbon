@@ -8,7 +8,7 @@ describe("GET /api/stall", () => {
     expect(res.status).toBe(200);
     expect(res.body.stall.id).toBe("econ-rice");
     expect(res.body.items).toHaveLength(5);
-    expect(res.body.items.find((i: any) => i.id === "econ-veg-egg")).toMatchObject({ low_carbon: true, kg_co2e: 0.65 });
+    expect(res.body.items.find((i: any) => i.id === "econ-veg-egg")).toMatchObject({ low_carbon: true, kg_co2e: 0.52 });
   });
 
   it("hides draft items", async () => {

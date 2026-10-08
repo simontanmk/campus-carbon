@@ -68,9 +68,9 @@ describe("GET /api/me/summary", () => {
       ('c','u-dana','food','meal',20,1,'qr','econ-rice','econ-veg-egg',1,0.65,${ws + 86_400_000 + 1000})`);
     const b = (await req("/api/me/summary", { as: "u-dana" })).body;
     expect(b.days).toEqual(["other", "low", "none", "none", "none", "none", "none"]);
-    expect(b.swap).toEqual({ from: "Chicken rice", to: "Vegetarian noodles with tofu", saves_kg: 0.97 });
-    expect(b.fact).toEqual({ high: { name: "Fish soup with rice", kg: 2.03 }, low: { name: "Economy rice: 2 veg + egg", kg: 0.65 } });
-    expect(b.featured).toEqual({ name: "Vegetarian noodles with tofu", stall_name: "Noodles & Rice Plates", kg_co2e: 0.39, points: 20 });
+    expect(b.swap).toEqual({ from: "Chicken rice", to: "Vegetarian noodles with tofu", saves_kg: 0.58 });
+    expect(b.fact).toEqual({ high: { name: "Fish soup with rice", kg: 1.17 }, low: { name: "Economy rice: 2 veg + egg", kg: 0.52 } });
+    expect(b.featured).toEqual({ name: "Vegetarian noodles with tofu", stall_name: "Noodles & Rice Plates", kg_co2e: 0.35, points: 20 });
   });
 
   it("skips draft items for the featured dish and swap", async () => {

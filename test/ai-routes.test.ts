@@ -64,7 +64,7 @@ describe("POST /api/meals/photo", () => {
     const uid = await freshStudent(ctx);
     const res = await ctx.req("/api/meals/photo", { as: uid, body: { image: { mime: "image/png", base64: PNG_1PX } } });
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ dish: "Vegetarian noodles with tofu", kg_co2e: 0.39, low_carbon: true, points: 0, source: "mock" });
+    expect(res.body).toMatchObject({ dish: "Vegetarian noodles with tofu", kg_co2e: 0.35, low_carbon: true, points: 0, source: "mock" });
     expect(res.body.image_hash).toMatch(/^[0-9a-f]{64}$/);
   });
 
@@ -72,7 +72,7 @@ describe("POST /api/meals/photo", () => {
     const ctx = await setup(live('{"dish":"Chicken rice","parts":{"rice":80,"poultry":100,"chilli":20},"kg_co2e":0.01,"confidence":0.9}'));
     const uid = await freshStudent(ctx);
     const res = await ctx.req("/api/meals/photo", { as: uid, body: { image: { mime: "image/png", base64: PNG_1PX } } });
-    expect(res.body).toMatchObject({ dish: "Chicken rice", parts: { rice: 80, poultry: 100 }, kg_co2e: 1.34, low_carbon: false, points: 0, source: "live" });
+    expect(res.body).toMatchObject({ dish: "Chicken rice", parts: { rice: 80, poultry: 100 }, kg_co2e: 0.91, low_carbon: false, points: 0, source: "live" });
   });
 
   it("an estimate with no usable parts is not low-carbon and earns 0", async () => {
@@ -106,9 +106,9 @@ describe("POST /api/meals/photo/confirm", () => {
     expect(a.points).toBe(5);
     const res = await ctx.req("/api/meals/photo/confirm", { as: uid, body: { dish: a.dish, parts: a.parts, image_hash: a.image_hash, ticket: a.ticket, kg_co2e: 0 } });
     expect(res.status).toBe(201);
-    expect(res.body).toEqual({ points: 5, capped: false, kg_co2e: 0.39, low_carbon: true });
+    expect(res.body).toEqual({ points: 5, capped: false, kg_co2e: 0.35, low_carbon: true });
     const row = ctx.raw.prepare("SELECT category, type, verified, source, low_carbon, kg_co2e, image_hash, detail_json FROM activities WHERE user_id=?").get(uid) as any;
-    expect(row).toMatchObject({ category: "food", type: "meal", verified: 0, source: "photo", low_carbon: 1, kg_co2e: 0.39, image_hash: a.image_hash });
+    expect(row).toMatchObject({ category: "food", type: "meal", verified: 0, source: "photo", low_carbon: 1, kg_co2e: 0.35, image_hash: a.image_hash });
     expect(JSON.parse(row.detail_json)).toMatchObject({ dish: "Vegetarian noodles with tofu" });
   });
 
@@ -177,7 +177,7 @@ describe("GET /api/me/nudge", () => {
     expect(res.status).toBe(200);
     expect(res.body.source).toBe("mock");
     expect(res.body.text).toContain("1.36 kg");
-    expect(res.body.text).toContain("0.97 kg");
+    expect(res.body.text).toContain("0.58 kg");
   });
 
   it("sends only computed facts to the model and caches a live nudge for the week", async () => {
