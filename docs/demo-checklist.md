@@ -52,7 +52,15 @@ Write the stall link from Admin → Stalls and items onto a sticker. Set the sta
 
 - [ ] **Log → trip:** pick The Hive → North Spine: walk, shuttle and car options with minutes and points, and "Routes © OpenStreetMap contributors" underneath. Tap Walk → +10.
 - [ ] **Typed trip:** "hive to hall 11" → both places filled.
-- [ ] **Steps and container returns:** each logs with a toast. The 30-point daily cap for self-reported logs shows "daily limit reached".
+- [ ] **Steps:** logs with a toast. The 30-point daily cap for self-reported logs shows "daily limit reached".
+- [ ] **Container returns (needs a real BCRS refund):** return a bottle or can at a Return Right machine and take the refund in PayLah! or SimplyGo. Then Log → "Upload refund screenshot" with a screenshot of that refund → "N containers returned · +5×N".
+- [ ] **Receipt checks:**
+  - the same screenshot again: "This screenshot has already been used."
+  - another screenshot of the same refund, even from a friend's phone: "This refund has already been claimed."
+  - a screenshot that isn't a refund: "Couldn't find a BCRS deposit refund…"
+  - a refund more than 3 days old: "Upload a refund from the last 3 days."
+- [ ] **Receipt cap:** receipts stop at 50 points a day (Points and limits → `receipt_daily_cap`), and they don't use up the 30-point cap.
+- [ ] **Before the demo:** try one or two real refund screenshots from both PayLah! and SimplyGo, to confirm the AI reads them. Blur anything personal if you share them.
 - [ ] **Today → Snap a meal:** photo of a real dish → "AI estimate" card → fix the name if needed → Log meal → it appears in Recent, and the toast stays even on a new student's first log.
 - [ ] **Gemini down?** The app shows "Offline estimate" and photo meals earn 0. Nothing else breaks.
 - [ ] **After 20 AI calls in a day,** a typed trip or photo says today's AI help is used up, and the dropdowns still work.
@@ -119,7 +127,7 @@ Write the stall link from Admin → Stalls and items onto a sticker. Set the sta
   - "Download redemptions (CSV)" works
 - [ ] **Admin → Points and limits:** the minimums are enforced (code lifetime 15 s or more, daily limit 1 or more).
 - [ ] **Admin → Stalls and items:** edit an item. The NFC sticker link is shown.
-- [ ] **Admin → Export activities (CSV):** opens in a spreadsheet, with `verified`, `source` and `confirm_latency_ms` (NFC rows) columns.
+- [ ] **Admin → Export activities (CSV):** opens in a spreadsheet, with `verified`, `source` and `confirm_latency_ms` (NFC rows) columns, plus `receipt_provider` and `refunded_at_sgt` for returns.
 - [ ] **A switched persona opening an `/admin/…` page** sees "Admins only", not a blank screen.
 
 ## Evaluation data
@@ -128,4 +136,5 @@ Write the stall link from Admin → Stalls and items onto a sticker. Set the sta
   - verified vs self-reported meals
   - low-carbon share
   - NFC confirm latency, a measure of seller workload
+  - container returns backed by receipts (`source = receipt`)
 - [ ] **Redemptions CSV:** which rewards were used, at which stall, and when.

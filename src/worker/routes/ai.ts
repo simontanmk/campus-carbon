@@ -3,7 +3,7 @@ import { bodyLimit } from "hono/body-limit";
 import type { AppEnv } from "../env";
 import { fail, readBody } from "../http";
 import { aiJson, aiLive } from "../lib/ai";
-import { cleanParts, MEAL_PROMPT, mockMeal, mockNudge, mockTrip, NUDGE_PROMPT, TRIP_PROMPT, validateMeal, validateNudge, validateTrip } from "../lib/ai-tasks";
+import { cleanParts, MEAL_PROMPT, mockMeal, mockNudge, mockReceipt, mockTrip, NUDGE_PROMPT, RECEIPT_PROMPT, TRIP_PROMPT, validateMeal, validateNudge, validateReceipt, validateTrip } from "../lib/ai-tasks";
 import { requireRole } from "../session";
 import { insertCapped } from "../activities";
 import { loadSettings } from "../db";
@@ -12,6 +12,8 @@ import { decodeImage } from "../image";
 import { sign, verify } from "../lib/token";
 import { weekFacts } from "../facts";
 import { sgDayStart, sgWeekStart } from "../lib/time";
+import { checkReceipt } from "../lib/receipt";
+import { sgIso } from "./admin-export";
 import type { Context } from "hono";
 
 export const ai = new Hono<AppEnv>();
@@ -116,6 +118,42 @@ ai.post("/meals/photo/confirm", student, async (c) => {
     throw e;
   }
   return c.json({ points, capped: points < full, ...a }, 201);
+});
+
+// A container return counts only with the BCRS refund receipt (spec 2026-10-08-bcrs-receipt-returns-design.md).
+// The AI reads the screenshot; checkReceipt decides. The image itself is never stored.
+ai.post("/returns/receipt", photoLimit, student, async (c) => {
+  const db = c.env.DB;
+  const uid = c.get("user")!.id;
+  const img = await decodeImage((await readBody(c)).image);
+  if ("error" in img) return fail(c, 400, "invalid_image", "Upload a JPEG, PNG or WebP screenshot under 1.5 MB.");
+  if (await hashUsed(db, img.hash)) return fail(c, 409, "duplicate_photo", "This screenshot has already been used.");
+  if (!(await takeAiCall(c))) return fail(c, 429, "ai_limit", "You've used today's AI checks. Try the receipt again tomorrow; it stays valid for 3 days.");
+  const r = await aiJson(c.env, { instructions: RECEIPT_PROMPT(Date.now()), text: "Read the BCRS refund in this screenshot.", image: { mime: img.mime, base64: img.base64 } }, validateReceipt, mockReceipt, c.env.AI_FETCH);
+  if (r.source !== "live") return fail(c, 503, "receipt_unavailable", "Can't check receipts right now. Try again later; the refund stays valid for 3 days.");
+  const now = Date.now();
+  const joined = await db.prepare("SELECT created_at FROM users WHERE id = ?").bind(uid).first<number>("created_at");
+  const k = checkReceipt(r.value, now, joined ?? now);
+  if (!k.ok) return fail(c, 422, k.code, k.message);
+  const s = await loadSettings(db);
+  const full = k.containers * s.points_container_return;
+  let points: number;
+  try {
+    points = await insertCapped(
+      db,
+      {
+        user_id: uid, category: "waste", type: "container_return", kg_co2e: null, source: "receipt", image_hash: img.hash, receipt_key: k.key,
+        detail: { count: k.containers, provider: k.provider, amount_cents: k.amountCents, refunded_at: sgIso(k.refundedAt), ai: "live" },
+      },
+      full, s.receipt_daily_cap, now,
+    );
+  } catch (e) {
+    const msg = String(e);
+    if (msg.includes("receipt_key")) return fail(c, 409, "receipt_claimed", "This refund has already been claimed.");
+    if (msg.includes("UNIQUE")) return fail(c, 409, "duplicate_photo", "This screenshot has already been used.");
+    throw e;
+  }
+  return c.json({ points, capped: points < full, containers: k.containers, provider: k.provider, refunded_at: sgIso(k.refundedAt) }, 201);
 });
 
 ai.get("/me/nudge", student, async (c) => {

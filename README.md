@@ -34,11 +34,12 @@ Live demo: https://campus-carbon.stan322.workers.dev, plus the projector page at
 ## What's in it
 
 - **Verified claims:** the seller taps the item sold and the student scans a QR code or taps the NFC sticker. Codes are single-use and rate-limited.
-- **Self-reported logging:** walking, shuttle and car trips over real campus routes (OSRM); steps; container returns; and meal photos estimated by AI. Self-reported points have a daily cap.
+- **Self-reported logging:** walking, shuttle and car trips over real campus routes (OSRM); steps; and meal photos estimated by AI. Self-reported points have a daily cap.
+- **Container returns backed by BCRS receipts:** the student uploads the Beverage Container Return Scheme refund from DBS PayLah! or SimplyGo. AI reads the amount and time (10¢ per container), and the app blocks reuse of the same refund.
 - **Progress:** missions, streaks, badges, a weekly leaderboard, a personal weekly carbon budget (85% of the student's first week), and a shareable weekly recap card.
 - **Rewards:** a separate balance to spend, 6-character codes or QR codes confirmed at the stall (typed or scanned by camera), and weekly stock limits.
 - **Admin:** stalls and items editor, menu import from a photo, points and limits, rewards editor, insights, and CSV exports.
-- **AI (Gemini, optional):** typed trips, meal photos, menu import, and a weekly nudge. The AI never decides kg or the low-carbon flag; those come from emission factors (Poore & Nemecek via Our World in Data, and DESNZ 2022).
+- **AI (Gemini, optional):** typed trips, meal photos, refund receipts, menu import, and a weekly nudge. The AI never decides kg or the low-carbon flag; those come from emission factors (Poore & Nemecek via Our World in Data, and DESNZ 2022).
 
 ## Stack
 

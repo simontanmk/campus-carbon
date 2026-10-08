@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api";
 import { MealPhoto } from "../components/MealPhoto";
+import { resizeToJpeg } from "../image";
+import { receiptToast } from "../copy";
 
 type Place = { id: string; name: string };
 type Option = { mode: "walk" | "shuttle" | "car"; minutes: number; kg_co2e: number | null; points: number };
@@ -14,7 +16,6 @@ export function Log() {
   const [to, setTo] = useState("");
   const [opts, setOpts] = useState<Options | null>(null);
   const [steps, setSteps] = useState("");
-  const [count, setCount] = useState(1);
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -150,25 +151,28 @@ export function Log() {
       <hr className="rule" />
       <div className="section">
         <h2 className="title">Container returns</h2>
-        <p className="body" style={{ fontSize: 14 }}>Bottles and cans returned under the Beverage Container Return Scheme.</p>
-        <div className="stepper">
-          <button aria-label="Fewer" onClick={() => setCount((n) => Math.max(1, n - 1))}>−</button>
-          <span className="num">{count}</span>
-          <button aria-label="More" onClick={() => setCount((n) => Math.min(20, n + 1))}>+</button>
-        </div>
-        <button
-          className="btn btn-secondary"
-          disabled={busy}
-          onClick={() =>
-            run(async () => {
-              const r = await api<{ points: number; capped: boolean }>("/returns", { count });
-              setCount(1);
-              return `${count} container${count === 1 ? "" : "s"} returned ${pts(r.points, r.capped)}`;
-            })
-          }
-        >
-          Log returns
-        </button>
+        <p className="body" style={{ fontSize: 14 }}>
+          Bottles and cans returned under the Beverage Container Return Scheme. Upload the refund screenshot from DBS PayLah! or SimplyGo:
+          each 10¢ refunded is one container, +5 each.
+        </p>
+        <label className="btn btn-secondary file-btn" aria-disabled={busy}>
+          {busy ? "Reading your receipt…" : "Upload refund screenshot"}
+          <input
+            type="file"
+            accept="image/*"
+            disabled={busy}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (!file) return;
+              run(async () => {
+                // Screenshots are tall; 1600 px keeps the small transaction text readable.
+                const r = await api<{ points: number; capped: boolean; containers: number }>("/returns/receipt", { image: await resizeToJpeg(file, 1600) });
+                return receiptToast(r.containers, pts(r.points, r.capped));
+              });
+            }}
+          />
+        </label>
       </div>
       <hr className="rule" />
       <div className="section">

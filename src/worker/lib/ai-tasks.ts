@@ -105,3 +105,24 @@ export function mockNudge(f: NudgeFacts): { text: string } {
   const swap = f.swap ? ` Swapping ${f.swap.from.toLowerCase()} for ${f.swap.to.toLowerCase()} next time saves ${f.swap.saves_kg} kg.` : "";
   return { text: lead + swap };
 }
+
+// BCRS refund receipt -------------------------------------------------------------------------
+export const RECEIPT_PROMPT = (now: number) =>
+  `You read a screenshot from a Singapore payment app. A Beverage Container Return Scheme (BCRS) deposit refund is a small credit ` +
+  `(10 cents per bottle or can) paid by a Return Right reverse vending machine into DBS PayLah! or SimplyGo EZ-Link. ` +
+  `Today in Singapore is ${new Date(now + 8 * 3_600_000).toISOString().slice(0, 10)}; if the screenshot shows no year, use the most recent date that is not after today. ` +
+  `If several transactions are shown, read the first BCRS deposit refund. Report only what the screenshot shows; never guess. ` +
+  `Reply only with JSON {"is_bcrs_refund": boolean, "provider": "paylah" | "simplygo" | null, "amount_cents": integer | null, "refunded_at": "YYYY-MM-DD HH:MM" | null} ` +
+  `where refunded_at is the transaction's Singapore date and time.`;
+
+export function validateReceipt(raw: unknown) {
+  if (!isObj(raw) || typeof raw.is_bcrs_refund !== "boolean") return null;
+  const p = typeof raw.provider === "string" ? raw.provider.toLowerCase().replace(/[^a-z]/g, "") : "";
+  const provider = p.includes("paylah") ? ("paylah" as const) : p.includes("simplygo") || p.includes("ezlink") ? ("simplygo" as const) : null;
+  const amount_cents = typeof raw.amount_cents === "number" && Number.isInteger(raw.amount_cents) ? raw.amount_cents : null;
+  const refunded_at = typeof raw.refunded_at === "string" && raw.refunded_at.trim() ? raw.refunded_at.trim() : null;
+  return { is_bcrs_refund: raw.is_bcrs_refund, provider, amount_cents, refunded_at };
+}
+
+/** Offline there is no honest reading of a receipt; the route refuses rather than inventing a count. */
+export const mockReceipt = () => ({ is_bcrs_refund: false, provider: null, amount_cents: null, refunded_at: null });

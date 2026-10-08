@@ -131,7 +131,7 @@ describe("robustness", () => {
     const ctx = await setup();
     const { app } = await import("../src/worker/app");
     const { sign } = await import("../src/worker/lib/token");
-    for (const path of ["/api/trips", "/api/steps", "/api/returns", "/api/claim", "/api/session"]) {
+    for (const path of ["/api/trips", "/api/steps", "/api/returns/receipt", "/api/claim", "/api/session"]) {
       const res = await app.request(`https://app.test${path}`, {
         method: "POST",
         headers: { "content-type": "application/json", cookie: `uid=${encodeURIComponent(await sign("u-alex", ctx.env.COOKIE_SECRET))}` },
@@ -159,24 +159,5 @@ describe("POST /api/steps", () => {
     const res = await ctx.req("/api/steps", { as: "u-alex", body: { steps } });
     expect(res.status).toBe(400);
     expect(res.body.error).toBe("invalid_steps");
-  });
-});
-
-describe("POST /api/returns", () => {
-  it("awards +5 per container, capped, with NULL kg", async () => {
-    const ctx = await setup();
-    const uid = await newStudent(ctx);
-    expect((await ctx.req("/api/returns", { as: uid, body: { count: 3 } })).body).toEqual({ points: 15, capped: false });
-    expect((await ctx.req("/api/returns", { as: uid, body: { count: 4 } })).body).toEqual({ points: 15, capped: true });
-    const rows = ctx.raw.prepare("SELECT category, type, kg_co2e, detail_json FROM activities WHERE user_id=? ORDER BY created_at").all(uid) as any[];
-    expect(rows[0]).toMatchObject({ category: "waste", type: "container_return", kg_co2e: null });
-    expect(JSON.parse(rows[1].detail_json)).toEqual({ count: 4 });
-  });
-
-  it.each([[0], [21], [1.5], ["2"], [null]])("rejects count=%j", async (count) => {
-    const ctx = await setup();
-    const res = await ctx.req("/api/returns", { as: "u-alex", body: { count } });
-    expect(res.status).toBe(400);
-    expect(res.body.error).toBe("invalid_count");
   });
 });

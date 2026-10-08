@@ -144,3 +144,6 @@ export function showSwapLine(nudge: string | null, swap: { to: string } | null):
   if (!swap) return false;
   return !nudge || !nudge.toLowerCase().includes(shortName(swap.to).toLowerCase());
 }
+
+/** Toast after a receipt-backed container return. */
+export const receiptToast = (containers: number, points: string) => `${containers} container${containers === 1 ? "" : "s"} returned ${points}`;

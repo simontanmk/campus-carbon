@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  receiptToast,
   activityLabel,
   budgetLine,
   budgetNote,
@@ -196,5 +197,12 @@ describe("showSwapLine", () => {
     expect(showSwapLine(null, swap)).toBe(true);
     expect(showSwapLine("Nice week of walking.", swap)).toBe(true);
     expect(showSwapLine("Nice week.", null)).toBe(false);
+  });
+});
+
+describe("receiptToast", () => {
+  it("names the containers and the points", () => {
+    expect(receiptToast(1, "· +5")).toBe("1 container returned · +5");
+    expect(receiptToast(3, "· +10, daily limit reached")).toBe("3 containers returned · +10, daily limit reached");
   });
 });

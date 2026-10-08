@@ -11,6 +11,7 @@ const LABELS: Record<string, string> = {
   points_shuttle_trip: "Shuttle trip",
   points_container_return: "Container return (each)",
   self_reported_daily_cap: "Daily cap on self-reported points",
+  receipt_daily_cap: "Daily cap on receipt-backed returns",
   rate_stall_window_min: "Minutes between claims at one stall",
   rate_daily_max: "Stall claims per day",
   token_ttl_sec: "Code lifetime (seconds)",

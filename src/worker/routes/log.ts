@@ -75,19 +75,3 @@ log.post("/steps", student, async (c) => {
   }).run();
   return c.json({ points: 0, steps: body.steps }, 201);
 });
-
-log.post("/returns", student, async (c) => {
-  const db = c.env.DB;
-  const body = (await readBody(c)) as { count?: unknown };
-  if (!isInt(body.count, 1, 20)) return fail(c, 400, "invalid_count", "Enter between 1 and 20 containers.");
-  const s = await loadSettings(db);
-  const full = body.count * s.points_container_return;
-  const points = await insertCapped(
-    db,
-    { user_id: c.get("user")!.id, category: "waste", type: "container_return", kg_co2e: null, detail: { count: body.count } },
-    full,
-    s.self_reported_daily_cap,
-    Date.now(),
-  );
-  return c.json({ points, capped: points < full }, 201);
-});

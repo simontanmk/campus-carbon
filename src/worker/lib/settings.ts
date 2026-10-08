@@ -6,6 +6,7 @@ export const DEFAULT_SETTINGS = {
   points_shuttle_trip: 5,
   points_container_return: 5,
   self_reported_daily_cap: 30,
+  receipt_daily_cap: 50,
   rate_stall_window_min: 10,
   rate_daily_max: 5,
   token_ttl_sec: 90,
