@@ -7,7 +7,7 @@ import { cleanParts, MEAL_PROMPT, mockMeal, mockNudge, mockReceipt, mockTrip, NU
 import { requireRole } from "../session";
 import { insertCapped } from "../activities";
 import { loadSettings } from "../db";
-import { computeKg, isLowCarbonMeal, type FactorTable, type Parts } from "../lib/carbon";
+import { bandOf, computeKg, isLowCarbon, type FactorTable, type Parts } from "../lib/carbon";
 import { decodeImage } from "../image";
 import { sign, verify } from "../lib/token";
 import { weekFacts } from "../facts";
@@ -61,11 +61,10 @@ async function factorTable(db: D1Database): Promise<FactorTable> {
   return Object.fromEntries(results.map((r) => [r.key, r.kg_per_unit]));
 }
 
-/** kg and low-carbon come only from the factor table and the §7 rule; empty parts never qualify. */
+/** kg and band come only from the factor table; low-carbon = the green band. Empty parts never qualify. */
 function assess(parts: Parts, factors: FactorTable) {
   const kg = Object.keys(parts).length ? computeKg(parts, factors) : null;
-  const low = kg != null && isLowCarbonMeal(parts);
-  return { kg_co2e: kg, low_carbon: low };
+  return { kg_co2e: kg, low_carbon: isLowCarbon("meal", kg), band: bandOf(kg) };
 }
 
 async function hashUsed(db: D1Database, hash: string) {

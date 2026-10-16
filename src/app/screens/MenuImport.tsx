@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import { bandKg, type Band } from "../copy";
 import { api, ApiError } from "../api";
 import { resizeToJpeg } from "../image";
 
 type Stall = { id: string; name: string; canteen: string };
-type Item = { id: string; name: string; kind: "meal" | "drink"; kg_co2e: number | null; low_carbon: boolean; status: "draft" | "live" };
+type Item = { id: string; name: string; kind: "meal" | "drink"; kg_co2e: number | null; low_carbon: boolean; band: Band | null; status: "draft" | "live" };
 
 export function MenuImport() {
   const [stalls, setStalls] = useState<Stall[]>([]);
@@ -78,7 +79,7 @@ export function MenuImport() {
             <div>
               <div className="what">{i.name}</div>
               <div className="meta">
-                {i.status} · {i.kind} · {i.kg_co2e == null ? "kg unknown" : `${i.kg_co2e} kg`}{i.low_carbon ? " · low-carbon" : ""}
+                {i.status} · {i.kind} · {bandKg(i.band, i.kg_co2e)}
               </div>
             </div>
             {i.status === "draft" && (

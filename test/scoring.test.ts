@@ -4,21 +4,25 @@ import { byoPoints, stallClaimPoints } from "../src/worker/lib/scoring";
 
 const s = DEFAULT_SETTINGS;
 
-describe("stallClaimPoints (spec §7)", () => {
-  it("low-carbon meal earns points_meal_low_carbon", () => {
-    expect(stallClaimPoints({ kind: "meal", low_carbon: true, points: null }, s)).toBe(20);
+describe("stallClaimPoints (bands, spec 2026-10-16)", () => {
+  it.each([
+    [0.35, 20], [0.7, 20], [0.71, 10], [0.93, 10], [1.4, 10], [1.41, 0], [4.04, 0],
+  ])("a %d kg meal earns %d", (kg, pts) => {
+    expect(stallClaimPoints({ kind: "meal", kg_co2e: kg, points: null }, s)).toBe(pts);
   });
-  it("other meal earns 0", () => {
-    expect(stallClaimPoints({ kind: "meal", low_carbon: false, points: null }, s)).toBe(0);
+  it("a meal with unknown kg earns 0", () => {
+    expect(stallClaimPoints({ kind: "meal", kg_co2e: null, points: null }, s)).toBe(0);
   });
-  it("drink earns 0 even if flagged low-carbon", () => {
-    expect(stallClaimPoints({ kind: "drink", low_carbon: true, points: null }, s)).toBe(0);
+  it("a drink earns 0 even when light", () => {
+    expect(stallClaimPoints({ kind: "drink", kg_co2e: 0.19, points: null }, s)).toBe(0);
   });
   it("item points override wins", () => {
-    expect(stallClaimPoints({ kind: "meal", low_carbon: false, points: 7 }, s)).toBe(7);
+    expect(stallClaimPoints({ kind: "meal", kg_co2e: 4.04, points: 7 }, s)).toBe(7);
   });
-  it("uses changed settings", () => {
-    expect(stallClaimPoints({ kind: "meal", low_carbon: true, points: null }, { ...s, points_meal_low_carbon: 25 })).toBe(25);
+  it("uses changed settings for both bands", () => {
+    const t = { ...s, points_meal_low_carbon: 25, points_meal_amber: 12 };
+    expect(stallClaimPoints({ kind: "meal", kg_co2e: 0.5, points: null }, t)).toBe(25);
+    expect(stallClaimPoints({ kind: "meal", kg_co2e: 1, points: null }, t)).toBe(12);
   });
 });
 

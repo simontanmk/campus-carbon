@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api";
 import { navigate } from "../router";
+import { BAND_LABEL, claimParts, type Band } from "../copy";
 
 type Result = {
   item_name: string;
   stall_name: string;
   kind: string;
   low_carbon: boolean;
+  band: Band | null;
   kg_co2e: number | null;
   points: number;
   activities: { type: string; points: number; kg_co2e: number | null }[];
@@ -44,12 +46,7 @@ export function Claim() {
   }
   if (!result) return <p className="muted result">Claiming…</p>;
 
-  const main = result.activities.find((a) => a.type !== "byo");
-  const byo = result.activities.find((a) => a.type === "byo");
-  const parts = [
-    result.low_carbon && main ? `Low-carbon meal +${main.points}` : null,
-    byo ? `Own container +${byo.points}` : null,
-  ].filter(Boolean);
+  const parts = claimParts(result);
 
   return (
     <div className="result">
@@ -62,6 +59,7 @@ export function Claim() {
       <div className="muted">
         {result.stall_name}
         {result.kg_co2e != null && ` · ${result.kg_co2e} kg CO₂e`}
+        {result.band && <span className={`tag ${result.band}`}> · {BAND_LABEL[result.band]}</span>}
       </div>
       {parts.length > 0 && (
         <div className="muted" style={{ borderTop: "0.5px solid var(--line)", paddingTop: 12, marginTop: 4, color: "var(--text-2)" }}>

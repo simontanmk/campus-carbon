@@ -150,3 +150,22 @@ export const receiptToast = (containers: number, points: string) => `${container
 
 /** How an activity was backed, for the Recent list: nothing for seller-verified claims. */
 export const evidenceTag = (a: { verified: boolean; source?: string }) => (a.verified ? null : a.source === "receipt" ? "refund receipt" : "self-reported");
+
+export type Band = "green" | "amber" | "red";
+export const BAND_LABEL: Record<Band, string> = { green: "Green", amber: "Amber", red: "Red" };
+
+/** "Green · 0.52 kg", "Red · 4.04 kg", or just the kg for drinks; "kg unknown" when there's no figure. */
+export function bandKg(band: Band | null | undefined, kg: number | null): string {
+  const k = kg == null ? "kg unknown" : `${kg} kg`;
+  return band ? `${BAND_LABEL[band]} · ${k}` : k;
+}
+
+/** The lines under a claim's points: the meal's band and points, and the own-container bonus. */
+export function claimParts(r: { band?: Band | null; activities: { type: string; points: number }[] }): string[] {
+  const main = r.activities.find((a) => a.type !== "byo");
+  const byo = r.activities.find((a) => a.type === "byo");
+  return [
+    main && r.band && main.points > 0 ? `${BAND_LABEL[r.band]} meal +${main.points}` : null,
+    byo ? `Own container +${byo.points}` : null,
+  ].filter((x): x is string => x !== null);
+}

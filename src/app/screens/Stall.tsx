@@ -1,10 +1,10 @@
 import QRCode from "qrcode";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api";
-import { pct, showCode } from "../copy";
+import { bandKg, pct, showCode, type Band } from "../copy";
 import { runScanner } from "../scanner";
 
-type Item = { id: string; name: string; kind: string; kg_co2e: number | null; low_carbon: boolean };
+type Item = { id: string; name: string; kind: string; kg_co2e: number | null; low_carbon: boolean; band: Band | null };
 type StallData = { stall: { id: string; name: string; canteen: string; active: boolean; verify_method: "qr" | "nfc" | "both" }; items: Item[] };
 type Created = { id: string; claim_url: string; expires_at: number; method: "qr" | "nfc"; server_now: number };
 type Status = { state: "pending" | "tapped" | "claimed" | "expired"; claimed_by: string | null; pending_name: string | null };
@@ -71,10 +71,7 @@ export function Stall() {
         {data.items.map((i) => (
           <button key={i.id} className="item-btn" onClick={() => sell(i)}>
             <span>{i.name.replace(/^Economy rice: /, "")}</span>
-            <span className={i.low_carbon ? "tag green" : "tag"}>
-              {i.low_carbon ? "Low-carbon · " : ""}
-              {i.kg_co2e == null ? "kg unknown" : `${i.kg_co2e} kg`}
-            </span>
+            <span className={i.band ? `tag ${i.band}` : "tag"}>{bandKg(i.band, i.kg_co2e)}</span>
           </button>
         ))}
       </div>

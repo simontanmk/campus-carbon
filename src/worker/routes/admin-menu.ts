@@ -5,7 +5,7 @@ import { fail, readBody } from "../http";
 import { decodeImage } from "../image";
 import { aiJson } from "../lib/ai";
 import { cleanParts, MENU_PROMPT, mockMenu, validateMenu } from "../lib/ai-tasks";
-import { computeKg, isLowCarbonMeal, type FactorTable, type Parts } from "../lib/carbon";
+import { computeKg, isLowCarbon, mealBand, type FactorTable, type Parts } from "../lib/carbon";
 import { requireRole } from "../session";
 
 export const adminMenu = new Hono<AppEnv>();
@@ -16,7 +16,7 @@ const photoLimit = bodyLimit({
 const admin = requireRole("admin");
 
 type ItemRow = { id: string; stall_id: string; name: string; kind: "meal" | "drink"; parts_json: string; kg_co2e: number | null; low_carbon: number; status: string };
-const shape = (r: ItemRow) => ({ id: r.id, stall_id: r.stall_id, name: r.name, kind: r.kind, parts: JSON.parse(r.parts_json || "{}"), kg_co2e: r.kg_co2e, low_carbon: r.low_carbon === 1, status: r.status });
+const shape = (r: ItemRow) => ({ id: r.id, stall_id: r.stall_id, name: r.name, kind: r.kind, parts: JSON.parse(r.parts_json || "{}"), kg_co2e: r.kg_co2e, low_carbon: r.low_carbon === 1, band: mealBand(r.kind, r.kg_co2e), status: r.status });
 
 async function factorTable(db: D1Database): Promise<FactorTable> {
   const { results } = await db.prepare("SELECT key, kg_per_unit FROM factors WHERE unit = 'kg'").all<{ key: string; kg_per_unit: number | null }>();
@@ -24,7 +24,7 @@ async function factorTable(db: D1Database): Promise<FactorTable> {
 }
 function assess(kind: "meal" | "drink", parts: Parts, f: FactorTable) {
   const kg = Object.keys(parts).length ? computeKg(parts, f) : null;
-  return { kg_co2e: kg, low_carbon: kind === "meal" && kg != null && isLowCarbonMeal(parts) ? 1 : 0 };
+  return { kg_co2e: kg, low_carbon: isLowCarbon(kind, kg) ? 1 : 0 };
 }
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "item";
 

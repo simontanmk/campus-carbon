@@ -120,3 +120,17 @@ describe("GET /api/me/summary", () => {
     expect((await req("/api/me/summary", { as: "u-seller-econ" })).status).toBe(403);
   });
 });
+
+describe("recent activity bands", () => {
+  it("labels meals with their band, and nothing else", async () => {
+    const { setup } = await import("./helpers/setup");
+    const ctx = await setup();
+    const now = Date.now();
+    ctx.raw.exec(`INSERT INTO activities (id,user_id,category,type,points,verified,source,item_id,low_carbon,kg_co2e,created_at) VALUES
+      ('r1','u-alex','food','meal',10,1,'qr','chicken-rice',0,0.93,${now}),
+      ('r2','u-alex','food','drink',0,1,'qr','kopi',NULL,0.47,${now - 1})`);
+    const recent = (await ctx.req("/api/me/summary", { as: "u-alex" })).body.recent;
+    expect(recent.find((a: any) => a.type === "meal").band).toBe("amber");
+    expect(recent.find((a: any) => a.type === "drink").band).toBeNull();
+  });
+});

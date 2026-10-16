@@ -22,7 +22,7 @@ it("a claimed sheet reports the claim once and closes itself, even when the pare
     renders++;
     // Inline callbacks: a new function every render, like the stall screen passes.
     return h(QrSheet, {
-      active: { id: "t1", claim_url: "", expires_at: now + 90_000, method: "qr", server_now: now, item: { id: "i", name: "Veg noodles", kind: "meal", kg_co2e: 0.4, low_carbon: true }, qr: "data:,", local_expires_at: now + 90_000 },
+      active: { id: "t1", claim_url: "", expires_at: now + 90_000, method: "qr", server_now: now, item: { id: "i", name: "Veg noodles", kind: "meal", kg_co2e: 0.4, low_carbon: true, band: "green" }, qr: "data:,", local_expires_at: now + 90_000 },
       byo: false,
       onClose: () => closes++,
       onClaimed: () => {

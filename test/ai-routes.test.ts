@@ -106,7 +106,7 @@ describe("POST /api/meals/photo/confirm", () => {
     expect(a.points).toBe(5);
     const res = await ctx.req("/api/meals/photo/confirm", { as: uid, body: { dish: a.dish, parts: a.parts, image_hash: a.image_hash, ticket: a.ticket, kg_co2e: 0 } });
     expect(res.status).toBe(201);
-    expect(res.body).toEqual({ points: 5, capped: false, kg_co2e: 0.35, low_carbon: true });
+    expect(res.body).toEqual({ points: 5, capped: false, kg_co2e: 0.35, low_carbon: true, band: "green" });
     const row = ctx.raw.prepare("SELECT category, type, verified, source, low_carbon, kg_co2e, image_hash, detail_json FROM activities WHERE user_id=?").get(uid) as any;
     expect(row).toMatchObject({ category: "food", type: "meal", verified: 0, source: "photo", low_carbon: 1, kg_co2e: 0.35, image_hash: a.image_hash });
     expect(JSON.parse(row.detail_json)).toMatchObject({ dish: "Vegetarian noodles with tofu" });

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api";
-import { formatParts, parsePartsText } from "../copy";
+import { formatParts, parsePartsText, bandKg, type Band } from "../copy";
 
 type Stall = { id: string; name: string; canteen: string; active: boolean; verify_method: "qr" | "nfc" | "both" };
-type Item = { id: string; name: string; kind: "meal" | "drink"; parts: Record<string, number>; kg_co2e: number | null; low_carbon: boolean; status: "draft" | "live" };
+type Item = { id: string; name: string; kind: "meal" | "drink"; parts: Record<string, number>; kg_co2e: number | null; low_carbon: boolean; band: Band | null; status: "draft" | "live" };
 
 export function AdminStalls() {
   const [stalls, setStalls] = useState<Stall[]>([]);
@@ -96,7 +96,7 @@ export function AdminStalls() {
             <div key={i.id} className="row" style={{ alignItems: "center" }}>
               <div>
                 <div className="what">{i.name}</div>
-                <div className="meta">{i.status} · {i.kind} · {i.kg_co2e == null ? "kg unknown" : `${i.kg_co2e} kg`}{i.low_carbon ? " · low-carbon" : ""}</div>
+                <div className="meta">{i.status} · {i.kind} · {bandKg(i.band, i.kg_co2e)}</div>
               </div>
               <div className="inline">
                 <button className="link-btn" onClick={() => startEdit(i)}>Edit</button>

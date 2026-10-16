@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeKg, isLowCarbonMeal } from "../src/worker/lib/carbon";
+import { computeKg, isLowCarbon } from "../src/worker/lib/carbon";
 
 const F = {
   rice: 4.45, wheat: 1.57, poultry: 9.87, pork: 12.31, beef_herd: 99.48, beef_dairy: 33.3,
@@ -36,15 +36,15 @@ describe("computeKg reproduces every spec seed value (spec §14.2–14.3)", () =
   });
 });
 
-describe("isLowCarbonMeal (spec §7)", () => {
-  it("is true for plant or egg protein", () => {
-    expect(isLowCarbonMeal({ rice: 80, veg: 150, eggs: 50 })).toBe(true);
-    expect(isLowCarbonMeal({ wheat: 100, veg: 100, tofu: 60 })).toBe(true);
+describe("isLowCarbon (green band)", () => {
+  it("is true for a meal at or under 0.7 kg, whatever it contains", () => {
+    expect(isLowCarbon("meal", 0.52)).toBe(true);
+    expect(isLowCarbon("meal", 0.7)).toBe(true);
   });
-  it.each(["poultry", "pork", "beef_herd", "beef_dairy", "fish_farmed"])("is false with %s", (k) => {
-    expect(isLowCarbonMeal({ rice: 80, [k]: 50 })).toBe(false);
-  });
-  it("ignores a zero-gram protein entry", () => {
-    expect(isLowCarbonMeal({ rice: 80, pork: 0 })).toBe(true);
+  it("is false for amber and red meals, unknown kg and drinks", () => {
+    expect(isLowCarbon("meal", 0.71)).toBe(false);
+    expect(isLowCarbon("meal", 4.04)).toBe(false);
+    expect(isLowCarbon("meal", null)).toBe(false);
+    expect(isLowCarbon("drink", 0.19)).toBe(false);
   });
 });

@@ -1,6 +1,6 @@
 # Campus Carbon
 
-A mobile web prototype for NTU CC0006. Students earn points for low-carbon canteen meals, verified by the stall through a QR code or an NFC tap. They also log trips, steps and container returns, take on missions, and spend points on stall rewards.
+A mobile web prototype for NTU CC0006. Students earn points for lighter canteen meals (green +20, amber +10, red 0 by kg CO₂e), verified by the stall through a QR code or an NFC tap. They also log trips, steps and container returns, take on missions, and spend points on stall rewards.
 
 Live demo: https://campus-carbon.stan322.workers.dev, plus the projector page at `/impact`.
 
@@ -39,7 +39,7 @@ Live demo: https://campus-carbon.stan322.workers.dev, plus the projector page at
 - **Progress:** missions, streaks, badges, a weekly leaderboard, a personal weekly carbon budget (85% of the student's first week), and a shareable weekly recap card.
 - **Rewards:** a separate balance to spend, 6-character codes or QR codes confirmed at the stall (typed or scanned by camera), and weekly stock limits.
 - **Admin:** stalls and items editor, menu import from a photo, points and limits, rewards editor, insights, and CSV exports.
-- **AI (Gemini, optional):** typed trips, meal photos, refund receipts, menu import, and a weekly nudge. The AI never decides kg or the low-carbon flag; those come from emission factors. Food uses Singapore values (Ecosperity 2019) plus land-use change from Poore & Nemecek via Our World in Data; transport uses DESNZ 2022. See `docs/factor-comparison.md`.
+- **AI (Gemini, optional):** typed trips, meal photos, refund receipts, menu import, and a weekly nudge. The AI never decides kg or the band; those come from emission factors. Food uses Singapore values (Ecosperity 2019) plus land-use change from Poore & Nemecek via Our World in Data; transport uses DESNZ 2022. See `docs/factor-comparison.md`.
 
 ## Stack
 

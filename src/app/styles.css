@@ -10,6 +10,7 @@
   --accent: #2e7d50;
   --accent-soft: #e6f0e9;
   --danger: #c4291c;
+  --amber: #a15c00;
   --ink: #1c1c1e;
   --serif: ui-serif, "New York", "Iowan Old Style", Georgia, serif;
   --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
@@ -97,7 +98,9 @@ input[type="text"]:focus, input[type="number"]:focus, input[type="password"]:foc
 }
 .item-btn:active { transform: scale(0.97); }
 .item-btn .tag { font-size: 12px; color: var(--muted); }
-.item-btn .tag.green { color: var(--accent); }
+.item-btn .tag.green, .tag.green { color: var(--accent); }
+.item-btn .tag.amber, .tag.amber { color: var(--amber); }
+.item-btn .tag.red, .tag.red { color: var(--danger); }
 
 /* Glass sheet (floating chrome only) */
 .glass {

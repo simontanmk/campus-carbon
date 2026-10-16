@@ -28,14 +28,16 @@ Open the app in Safari or Chrome. Don't open it inside a chat app's built-in bro
 
 ## Claims: QR (seller-verified)
 
-- [ ] The seller taps a low-carbon item with "Own cup or container" on: a QR code and countdown appear.
+- [ ] The seller's items show their band and kg in colour (Green, Amber, Red).
+- [ ] The seller taps a green item with "Own cup or container" on: a QR code and countdown appear.
 - [ ] The iPhone camera scans the QR → Safari opens → Welcome (first time only) → +35 shows without a second scan.
 - [ ] The seller's screen shows "Claimed by <name>" within about 2 s.
 - [ ] Android camera or Google Lens scans a new QR: the claim works.
 - [ ] Rescanning a used QR says "already used".
 - [ ] After 90 s the seller sees "This code expired"; "New code" works.
 - [ ] Same student, same stall, second claim within 10 minutes: rate-limit message.
-- [ ] Chicken rice claim: 0 points, 0.93 kg shown.
+- [ ] Chicken rice claim: "+10", "0.93 kg CO₂e · Amber", "Amber meal +10".
+- [ ] Beef hor fun claim: "Logged", "4.04 kg CO₂e · Red", 0 points.
 - [ ] The seller's "Your stall this week" panel (meals, low-carbon %, own containers, with last week's figures) goes up after a claim.
 
 ## Claims: NFC sticker

@@ -1,4 +1,5 @@
-import { computeKg, isLowCarbonMeal, type FactorTable } from "../src/worker/lib/carbon.ts";
+import { computeKg, isLowCarbon, type FactorTable } from "../src/worker/lib/carbon.ts";
+import { stallClaimPoints } from "../src/worker/lib/scoring.ts";
 import { BADGES } from "../src/worker/lib/badges.ts";
 import { MISSIONS } from "../src/worker/lib/missions.ts";
 import { DEFAULT_SETTINGS } from "../src/worker/lib/settings.ts";
@@ -39,7 +40,7 @@ export function buildSeedSql(now: number = Date.now()): string {
   const itemKg = new Map<string, { kg: number | null; low: number; stall: string; kind: string }>();
   for (const i of ITEMS) {
     const kg = computeKg(i.parts, factorTable);
-    const low = i.kind === "meal" && isLowCarbonMeal(i.parts) ? 1 : 0;
+    const low = isLowCarbon(i.kind, kg) ? 1 : 0;
     itemKg.set(i.id, { kg, low, stall: i.stall_id, kind: i.kind });
     out.push(
       upsert(
@@ -87,7 +88,7 @@ export function buildSeedSql(now: number = Date.now()): string {
       } else {
         const it = itemKg.get(e.item)!;
         const low = e.kind === "meal" ? it.low : null;
-        const points = e.kind === "meal" && it.low === 1 ? DEFAULT_SETTINGS.points_meal_low_carbon : 0;
+        const points = stallClaimPoints({ kind: e.kind, kg_co2e: it.kg, points: null }, DEFAULT_SETTINGS);
         cols = { id, user_id: uid, category: "food", type: e.kind, kg_co2e: it.kg, points, verified: 1, source: "qr", stall_id: it.stall, item_id: e.item, low_carbon: low, detail_json: "{}" };
       }
       out.push(historyInsert(cols, at));
@@ -131,7 +132,17 @@ export function buildFactorsSql(): string {
     `UPDATE items SET kg_co2e = ${kgFromJson("items.parts_json")};`,
     `UPDATE activities SET kg_co2e = (SELECT i.kg_co2e FROM items i WHERE i.id = activities.item_id) WHERE category = 'food' AND item_id IS NOT NULL;`,
     `UPDATE activities SET kg_co2e = ${kgFromJson("activities.detail_json, '$.parts'")} WHERE category = 'food' AND source = 'photo';`,
+    ...LOW_CARBON_FROM_BAND,
     // Cached weekly nudges quote the old kg.
     `DELETE FROM summaries;`,
   ].join("\n") + "\n";
 }
+
+/**
+ * Low-carbon = the green band (spec 2026-10-16-band-scoring-design.md): re-derive the stored flags from kg.
+ * Points already awarded are never changed. Same statements as migration 0007.
+ */
+export const LOW_CARBON_FROM_BAND = [
+  `UPDATE items SET low_carbon = CASE WHEN kind = 'meal' AND kg_co2e IS NOT NULL AND kg_co2e <= 0.7 THEN 1 ELSE 0 END;`,
+  `UPDATE activities SET low_carbon = CASE WHEN kg_co2e IS NOT NULL AND kg_co2e <= 0.7 THEN 1 ELSE 0 END WHERE type = 'meal';`,
+];

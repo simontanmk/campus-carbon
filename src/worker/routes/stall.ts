@@ -1,3 +1,4 @@
+import { mealBand } from "../lib/carbon";
 import { Hono } from "hono";
 import { loadSettings } from "../db";
 import type { AppEnv } from "../env";
@@ -23,7 +24,7 @@ stall.get("/stall", seller, async (c) => {
     .all<{ id: string; name: string; kind: string; kg_co2e: number | null; low_carbon: number }>();
   return c.json({
     stall: { ...s, active: s.active === 1 },
-    items: results.map((i) => ({ ...i, low_carbon: i.low_carbon === 1 })),
+    items: results.map((i) => ({ ...i, low_carbon: i.low_carbon === 1, band: mealBand(i.kind, i.kg_co2e) })),
   });
 });
 

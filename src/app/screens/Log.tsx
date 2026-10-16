@@ -177,7 +177,7 @@ export function Log() {
       <hr className="rule" />
       <div className="section">
         <h2 className="title">Meal at another stall</h2>
-        <p className="body" style={{ fontSize: 14 }}>For stalls without a code. Photo meals are self-reported and earn +5 if plant or egg based.</p>
+        <p className="body" style={{ fontSize: 14 }}>For stalls without a code. Photo meals are self-reported and earn +5 if green (0.7 kg CO₂e or less).</p>
         <MealPhoto />
       </div>
     </>

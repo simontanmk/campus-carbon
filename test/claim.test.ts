@@ -26,12 +26,26 @@ describe("POST /api/claim — success", () => {
     expect((ctx.raw.prepare("SELECT used_by FROM tokens WHERE id=?").get(t.id) as any).used_by).toBe("u-alex");
   });
 
-  it("records a non-low-carbon meal with 0 points", async () => {
+  it("an amber meal earns 10 and isn't low-carbon", async () => {
     const ctx = await setup();
     const t = await makeToken(ctx, "u-seller-noodles", "chicken-rice");
     const res = await ctx.req("/api/claim", { as: "u-alex", body: { t: t.token } });
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ low_carbon: false, kg_co2e: 0.93, points: 0 });
+    expect(res.body).toMatchObject({ low_carbon: false, band: "amber", kg_co2e: 0.93, points: 10 });
+    expect(ctx.raw.prepare("SELECT points, low_carbon FROM activities WHERE token_id = ?").get(t.id)).toEqual({ points: 10, low_carbon: 0 });
+  });
+
+  it("a red meal is recorded with 0 points", async () => {
+    const ctx = await setup();
+    const t = await makeToken(ctx, "u-seller-noodles", "beef-hor-fun");
+    const res = await ctx.req("/api/claim", { as: "u-alex", body: { t: t.token } });
+    expect(res.body).toMatchObject({ low_carbon: false, band: "red", kg_co2e: 4.04, points: 0 });
+  });
+
+  it("a green meal is low-carbon", async () => {
+    const ctx = await setup();
+    const t = await makeToken(ctx, "u-seller-noodles", "veg-noodles");
+    expect((await ctx.req("/api/claim", { as: "u-alex", body: { t: t.token } })).body).toMatchObject({ low_carbon: true, band: "green", points: 20 });
   });
 
   it("records a drink with unknown kg as NULL, not 0", async () => {

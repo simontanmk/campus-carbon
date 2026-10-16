@@ -1,8 +1,9 @@
 import { useRef, useState } from "react";
 import { api, ApiError } from "../api";
 import { resizeToJpeg } from "../image";
+import { BAND_LABEL, type Band } from "../copy";
 
-type Estimate = { dish: string; parts: Record<string, number>; kg_co2e: number | null; low_carbon: boolean; points: number; image_hash: string; source: "live" | "mock"; ticket: string };
+type Estimate = { dish: string; parts: Record<string, number>; kg_co2e: number | null; low_carbon: boolean; band: Band | null; points: number; image_hash: string; source: "live" | "mock"; ticket: string };
 
 /**
  * Photo of a meal from a stall without a code: camera → AI estimate → confirm.
@@ -68,7 +69,7 @@ export function MealPhoto({ label = "Take a photo", primary = false, onLogged }:
           <span className="tag">Fix the name if it's wrong. Points and kg come from the photo estimate.</span>
           <div className="muted">
             {estimate.kg_co2e == null ? "kg unknown" : `${estimate.kg_co2e} kg CO₂e`}
-            {estimate.low_carbon ? " · low-carbon" : ""} · {estimate.points > 0 ? `+${estimate.points}` : "0 points"}
+            {estimate.band && <span className={`tag ${estimate.band}`}> · {BAND_LABEL[estimate.band]}</span>} · {estimate.points > 0 ? `+${estimate.points}` : "0 points"}
           </div>
           <div className="inline">
             <button className="btn btn-secondary" disabled={busy} onClick={() => setEstimate(null)}>Cancel</button>

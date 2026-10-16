@@ -4,9 +4,10 @@ import { api, ApiError } from "../api";
 type Payload = { settings: Record<string, number>; missions: { id: string; name: string; points: number; default_points: number }[] };
 
 const LABELS: Record<string, string> = {
-  points_meal_low_carbon: "Low-carbon stall meal",
+  points_meal_low_carbon: "Green stall meal (0.7 kg or less)",
+  points_meal_amber: "Amber stall meal (0.7–1.4 kg)",
   points_byo: "Own cup or container",
-  points_photo_low_carbon: "Photo meal (low-carbon)",
+  points_photo_low_carbon: "Photo meal (green)",
   points_walk_trip: "Walk trip",
   points_shuttle_trip: "Shuttle trip",
   points_container_return: "Container return (each)",

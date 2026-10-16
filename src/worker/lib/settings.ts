@@ -1,5 +1,6 @@
 export const DEFAULT_SETTINGS = {
   points_meal_low_carbon: 20,
+  points_meal_amber: 10,
   points_byo: 15,
   points_photo_low_carbon: 5,
   points_walk_trip: 10,

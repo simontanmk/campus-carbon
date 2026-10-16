@@ -1,6 +1,7 @@
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { insertActivity } from "./activities";
 import { byoPoints, stallClaimPoints } from "./lib/scoring";
+import { isLowCarbon, mealBand, type Band } from "./lib/carbon";
 import type { Settings } from "./lib/settings";
 import { sgDayStart } from "./lib/time";
 
@@ -13,7 +14,7 @@ export type TokenRow = {
 export type Blocker = readonly [ContentfulStatusCode, string, string];
 export const isBlocker = (r: ClaimResult | Blocker): r is Blocker => Array.isArray(r);
 export type ClaimResult = {
-  item_name: string; stall_name: string; kind: "meal" | "drink"; low_carbon: boolean; kg_co2e: number | null; points: number;
+  item_name: string; stall_name: string; kind: "meal" | "drink"; low_carbon: boolean; band: Band | null; kg_co2e: number | null; points: number;
   activities: { type: string; points: number; kg_co2e: number | null }[];
 };
 
@@ -69,8 +70,9 @@ export async function award(db: D1Database, tok: TokenRow, userId: string, now: 
     return (await claimBlocker(db, tok, userId, now, s)) ?? [429, "rate_limited", `You can claim at this stall once every ${s.rate_stall_window_min} minutes.`];
   }
 
-  const low = tok.kind === "meal" && tok.low_carbon === 1;
-  const mainPoints = stallClaimPoints({ kind: tok.kind, low_carbon: low, points: tok.item_points }, s);
+  // The band (from the item's kg) decides both the points and the low-carbon flag.
+  const low = isLowCarbon(tok.kind, tok.kg_co2e);
+  const mainPoints = stallClaimPoints({ kind: tok.kind, kg_co2e: tok.kg_co2e, points: tok.item_points }, s);
   const base = { user_id: userId, verified: true, source, token_id: tok.id, stall_id: tok.stall_id, created_at: now };
   const stmts = [insertActivity(db, { ...base, category: "food", type: tok.kind, kg_co2e: tok.kg_co2e, points: mainPoints, item_id: tok.item_id, low_carbon: tok.kind === "meal" ? low : null })];
   const activities = [{ type: tok.kind as string, points: mainPoints, kg_co2e: tok.kg_co2e }];
@@ -87,7 +89,7 @@ export async function award(db: D1Database, tok: TokenRow, userId: string, now: 
     throw err;
   }
   return {
-    item_name: tok.item_name, stall_name: tok.stall_name, kind: tok.kind, low_carbon: low, kg_co2e: tok.kg_co2e,
+    item_name: tok.item_name, stall_name: tok.stall_name, kind: tok.kind, low_carbon: low, band: mealBand(tok.kind, tok.kg_co2e), kg_co2e: tok.kg_co2e,
     points: activities.reduce((n, a) => n + a.points, 0), activities,
   };
 }

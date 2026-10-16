@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  bandKg,
+  claimParts,
   evidenceTag,
   receiptToast,
   activityLabel,
@@ -214,5 +216,25 @@ describe("evidenceTag", () => {
     expect(evidenceTag({ verified: false, source: "receipt" })).toBe("refund receipt");
     expect(evidenceTag({ verified: false, source: "manual" })).toBe("self-reported");
     expect(evidenceTag({ verified: false, source: "photo" })).toBe("self-reported");
+  });
+});
+
+describe("bandKg", () => {
+  it("leads with the band for meals and shows kg alone for drinks", () => {
+    expect(bandKg("green", 0.52)).toBe("Green · 0.52 kg");
+    expect(bandKg("red", 4.04)).toBe("Red · 4.04 kg");
+    expect(bandKg(null, 0.47)).toBe("0.47 kg");
+    expect(bandKg(null, null)).toBe("kg unknown");
+  });
+});
+
+describe("claimParts", () => {
+  it("names the band with its points, and the container bonus", () => {
+    expect(claimParts({ band: "green", activities: [{ type: "meal", points: 20 }, { type: "byo", points: 15 }] })).toEqual(["Green meal +20", "Own container +15"]);
+    expect(claimParts({ band: "amber", activities: [{ type: "meal", points: 10 }] })).toEqual(["Amber meal +10"]);
+  });
+  it("says nothing about a red meal or a drink that earned 0", () => {
+    expect(claimParts({ band: "red", activities: [{ type: "meal", points: 0 }] })).toEqual([]);
+    expect(claimParts({ band: null, activities: [{ type: "drink", points: 0 }, { type: "byo", points: 15 }] })).toEqual(["Own container +15"]);
   });
 });

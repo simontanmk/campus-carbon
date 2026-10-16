@@ -23,7 +23,7 @@ export function Welcome({ onDone }: { onDone: () => Promise<unknown> }) {
     <form className="page" onSubmit={submit} style={{ paddingTop: "18vh" }}>
       <div className="eyebrow">Campus Carbon</div>
       <h1 className="display">Eat a little lighter. Earn points for it.</h1>
-      <p className="body">Scan the stall's code after a low-carbon meal or when you bring your own cup. What should we call you?</p>
+      <p className="body">Scan the stall's code after your meal: lighter meals earn more, and your own cup earns extra. What should we call you?</p>
       <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" maxLength={30} autoFocus />
       {error && <p className="error">{error}</p>}
       <button className="btn" disabled={busy || name.trim() === ""}>Continue</button>

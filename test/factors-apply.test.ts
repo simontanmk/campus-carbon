@@ -69,3 +69,21 @@ describe("buildFactorsSql", () => {
     expect(mismatched).toEqual([]);
   });
 });
+
+describe("low-carbon = green band (migration 0007 and buildFactorsSql)", () => {
+  it("re-derives stored flags from kg without touching points", async () => {
+    const ctx = await setup();
+    const now = Date.now();
+    ctx.raw.exec(`INSERT INTO activities (id,user_id,category,type,kg_co2e,points,verified,source,low_carbon,image_hash,detail_json,created_at) VALUES
+      ('g1','u-alex','food','meal',0.6,5,0,'photo',0,'h1','{"parts":{"rice":80,"poultry":50,"veg":100}}',${now}),
+      ('a1','u-alex','food','meal',0.9,5,0,'photo',1,'h2','{"parts":{"wheat":100,"tofu":250}}',${now})`);
+    const migration = (await import("node:fs")).readFileSync("migrations/0007_low_carbon_is_green.sql", "utf8");
+    ctx.raw.exec(migration);
+    const row = (id: string) => all(ctx, "SELECT low_carbon, points FROM activities WHERE id = ?", id)[0];
+    expect(row("g1")).toEqual({ low_carbon: 1, points: 5 });
+    expect(row("a1")).toEqual({ low_carbon: 0, points: 5 });
+    expect(all(ctx, "SELECT low_carbon FROM items WHERE id = 'kopi'")[0].low_carbon).toBe(0);
+    expect(all(ctx, "SELECT low_carbon FROM items WHERE id = 'chicken-rice'")[0].low_carbon).toBe(0);
+    expect(all(ctx, "SELECT low_carbon FROM items WHERE id = 'econ-veg-egg'")[0].low_carbon).toBe(1);
+  });
+});

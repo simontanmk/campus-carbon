@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api";
 import { navigate } from "../router";
+import { BAND_LABEL, claimParts, type Band } from "../copy";
 
-type Result = { item_name: string; stall_name: string; low_carbon: boolean; kg_co2e: number | null; points: number; activities: { type: string; points: number }[] };
+type Result = { item_name: string; stall_name: string; low_carbon: boolean; band: Band | null; kg_co2e: number | null; points: number; activities: { type: string; points: number }[] };
 type Status = { state: "waiting" | "confirmed" | "expired"; stall_name: string; item_name: string; result?: Result };
 
 export function Tap() {
@@ -66,9 +67,7 @@ export function Tap() {
     );
   }
   const r = status.result;
-  const byo = r.activities.find((a) => a.type === "byo");
-  const main = r.activities.find((a) => a.type !== "byo");
-  const parts = [r.low_carbon && main ? `Low-carbon meal +${main.points}` : null, byo ? `Own container +${byo.points}` : null].filter(Boolean);
+  const parts = claimParts(r);
   return (
     <div className="result">
       <svg className="check" width="92" height="92" viewBox="0 0 92 92" aria-hidden="true">
@@ -77,7 +76,7 @@ export function Tap() {
       </svg>
       <div className="num-xl" style={{ marginTop: 8 }}>{r.points > 0 ? `+${r.points}` : "Logged"}</div>
       <div className="title" style={{ fontSize: 20 }}>{r.item_name}</div>
-      <div className="muted">{r.stall_name}{r.kg_co2e != null && ` · ${r.kg_co2e} kg CO₂e`}</div>
+      <div className="muted">{r.stall_name}{r.kg_co2e != null && ` · ${r.kg_co2e} kg CO₂e`}{r.band && <span className={`tag ${r.band}`}> · {BAND_LABEL[r.band]}</span>}</div>
       {parts.length > 0 && <div className="muted" style={{ borderTop: "0.5px solid var(--line)", paddingTop: 12, marginTop: 4, color: "var(--text-2)" }}>{parts.join(" · ")}</div>}
       <div style={{ width: "100%", marginTop: 28 }}><button className="btn" onClick={() => navigate("/")}>Done</button></div>
     </div>

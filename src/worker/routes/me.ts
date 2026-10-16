@@ -1,3 +1,4 @@
+import { mealBand } from "../lib/carbon";
 import { Hono } from "hono";
 import type { AppEnv } from "../env";
 import { loadActs, safeJson } from "../acts";
@@ -81,6 +82,7 @@ me.get("/me/summary", requireRole("student"), async (c) => {
     recent: results.map(({ detail_json, from_name, to_name, ...r }) => ({
       ...r,
       low_carbon: r.low_carbon == null ? null : r.low_carbon === 1,
+      band: mealBand(r.type, r.kg_co2e),
       verified: r.verified === 1,
       detail: safeJson(detail_json),
       place_names: from_name && to_name ? { from: from_name, to: to_name } : null,
