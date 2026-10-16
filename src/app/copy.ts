@@ -169,3 +169,12 @@ export function claimParts(r: { band?: Band | null; activities: { type: string; 
     byo ? `Own container +${byo.points}` : null,
   ].filter((x): x is string => x !== null);
 }
+
+/**
+ * A trip option's kg. The shuttle factor is a diesel-bus average and NTU's fleet is being electrified,
+ * so its figure is shown as an upper bound.
+ */
+export function tripKg(mode: string, kg: number | null): string {
+  if (kg == null) return "factor pending";
+  return mode === "shuttle" ? `up to ${kg} kg CO₂e` : `${kg} kg CO₂e`;
+}

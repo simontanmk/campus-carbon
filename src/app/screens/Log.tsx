@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api";
 import { MealPhoto } from "../components/MealPhoto";
 import { resizeToJpeg } from "../image";
-import { receiptToast } from "../copy";
+import { receiptToast, tripKg } from "../copy";
 
 type Place = { id: string; name: string };
 type Option = { mode: "walk" | "shuttle" | "car"; minutes: number; kg_co2e: number | null; points: number };
@@ -119,7 +119,7 @@ export function Log() {
               >
                 <div>
                   <div className="mode">{MODE[o.mode]}</div>
-                  <div className="sub">{o.minutes} min · {o.kg_co2e == null ? "factor pending" : `${o.kg_co2e} kg CO₂e`}</div>
+                  <div className="sub">{o.minutes} min · {tripKg(o.mode, o.kg_co2e)}</div>
                 </div>
                 <span className={o.points > 0 ? "pts green" : "pts"}>{o.points > 0 ? `+${o.points}` : "0"}</span>
               </button>

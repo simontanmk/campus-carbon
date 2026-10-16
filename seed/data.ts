@@ -9,7 +9,7 @@ export const FACTORS: { key: string; kg_per_unit: number | null; unit: "kg" | "p
     source: v.basis === "sg+luc" ? COMBINED_SOURCE : OWID,
     note: v.basis === "sg+luc" ? null : OWID_TOTAL[key].note,
   })),
-  { key: "shuttle", kg_per_unit: 0.0965, unit: "pkm", source: "UK DESNZ (2022) via Our World in Data: Bus (average)", note: "proxy; NTU shuttle fleet is being electrified, so the true value is lower" },
+  { key: "shuttle", kg_per_unit: 0.0965, unit: "pkm", source: "UK DESNZ (2022) via Our World in Data: Bus (average)", note: "upper bound: average (mostly diesel) bus; NTU's shuttle fleet is being electrified, so the true value is lower. Shown to students as \"up to\"." },
   { key: "car", kg_per_unit: 0.1705, unit: "pkm", source: "UK DESNZ (2022) via Our World in Data: Petrol car", note: "per km, single occupant; also used for Grab" },
 ];
 

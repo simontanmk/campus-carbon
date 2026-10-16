@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  tripKg,
   bandKg,
   claimParts,
   evidenceTag,
@@ -236,5 +237,16 @@ describe("claimParts", () => {
   it("says nothing about a red meal or a drink that earned 0", () => {
     expect(claimParts({ band: "red", activities: [{ type: "meal", points: 0 }] })).toEqual([]);
     expect(claimParts({ band: null, activities: [{ type: "drink", points: 0 }, { type: "byo", points: 15 }] })).toEqual(["Own container +15"]);
+  });
+});
+
+describe("tripKg", () => {
+  it("labels the shuttle figure as an upper bound", () => {
+    expect(tripKg("shuttle", 0.05)).toBe("up to 0.05 kg CO₂e");
+  });
+  it("shows other modes as they are, and a missing factor as pending", () => {
+    expect(tripKg("car", 0.09)).toBe("0.09 kg CO₂e");
+    expect(tripKg("walk", 0)).toBe("0 kg CO₂e");
+    expect(tripKg("shuttle", null)).toBe("factor pending");
   });
 });
