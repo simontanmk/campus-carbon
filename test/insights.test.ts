@@ -52,15 +52,15 @@ describe("averageMealKg", () => {
 });
 
 describe("kgSaved", () => {
-  it("adds avg − kg for verified low-carbon meals, never negative, never photo meals", () => {
+  it("adds avg − kg for every verified meal lighter than average, whatever its band; never negative, never photo meals", () => {
     const acts = [
-      act({ kg_co2e: 0.4 }), // 1.0 - 0.4 = 0.6
-      act({ kg_co2e: 1.3 }), // heavier than average: 0
-      act({ low_carbon: 0, kg_co2e: 0.2 }), // not low-carbon: 0
+      act({ kg_co2e: 0.4 }), // green: 1.0 - 0.4 = 0.6
+      act({ low_carbon: 0, kg_co2e: 0.8 }), // amber, still lighter than average: 0.2
+      act({ low_carbon: 0, kg_co2e: 1.3 }), // heavier than average: 0, not -0.3
       act({ verified: 0, source: "photo", kg_co2e: 0.1 }), // photo: 0
       act({ kg_co2e: null }), // unknown kg: 0
     ];
-    expect(kgSaved(acts, 1.0)).toBe(0.6);
+    expect(kgSaved(acts, 1.0)).toBe(0.8);
   });
   it("is 0 when there is no average", () => {
     expect(kgSaved([act()], null)).toBe(0);

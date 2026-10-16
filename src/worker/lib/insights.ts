@@ -48,10 +48,13 @@ export function averageMealKg(items: MenuItemKg[]): number | null {
   return kgs.length ? r2(mean(kgs)) : null;
 }
 
-/** Estimated kg saved: each verified low-carbon meal vs the average campus meal, never below zero. */
+/**
+ * Estimated kg saved: every verified meal lighter than the average campus meal, whatever its band, counts
+ * avg − kg; heavier meals count 0, never negative (spec 2026-10-16-kg-saved-design.md).
+ */
 export function kgSaved(acts: MealLike[], avg: number | null): number {
   if (avg == null) return 0;
-  return r1(verifiedMeals(acts).reduce((n, a) => (a.low_carbon === 1 && a.kg_co2e != null ? n + Math.max(0, avg - a.kg_co2e) : n), 0));
+  return r1(verifiedMeals(acts).reduce((n, a) => (a.kg_co2e != null ? n + Math.max(0, avg - a.kg_co2e) : n), 0));
 }
 
 export function stats(acts: InsightAct[]): Stats {
