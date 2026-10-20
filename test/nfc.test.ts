@@ -15,6 +15,7 @@ const nfcToken = (ctx: any, item_id = "veg-noodles", byo = false) =>
 describe("NFC token creation", () => {
   it("is refused at a QR-only stall", async () => {
     const ctx = await setup();
+    ctx.raw.exec("UPDATE stalls SET verify_method='qr' WHERE id='econ-rice'");
     const res = await ctx.req("/api/stall/tokens", { as: "u-seller-econ", body: { item_id: "econ-veg-egg", method: "nfc" } });
     expect(res.status).toBe(400);
     expect(res.body.error).toBe("method_off");
@@ -97,7 +98,7 @@ describe("tap → seller confirm", () => {
 
   it.each([
     ["nothing pending", async (ctx: any) => {}, "noodles", 404, "no_pending"],
-    ["QR-only stall", async (ctx: any) => {}, "econ-rice", 403, "nfc_off"],
+    ["QR-only stall", async (ctx: any) => { ctx.raw.exec("UPDATE stalls SET verify_method='qr' WHERE id='econ-rice'"); }, "econ-rice", 403, "nfc_off"],
     ["unknown stall", async (ctx: any) => {}, "nope", 404, "no_stall"],
     ["expired token", async (ctx: any) => { const t = (await nfcToken(ctx)).body; ctx.raw.exec(`UPDATE tokens SET expires_at=0 WHERE id='${t.id}'`); }, "noodles", 404, "no_pending"],
   ])("tap with %s → %i %s", async (_n, prep, stall_id, status, error) => {

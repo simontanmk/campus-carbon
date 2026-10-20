@@ -14,9 +14,9 @@ export const FACTORS: { key: string; kg_per_unit: number | null; unit: "kg" | "p
 ];
 
 export const STALLS = [
-  { id: "econ-rice", name: "Economy Rice", canteen: "Demo Canteen", verify_method: "qr" },
+  { id: "econ-rice", name: "Economy Rice", canteen: "Demo Canteen", verify_method: "both" },
   { id: "noodles", name: "Noodles & Rice Plates", canteen: "Demo Canteen", verify_method: "both" },
-  { id: "drinks", name: "Drinks", canteen: "Demo Canteen", verify_method: "qr" },
+  { id: "drinks", name: "Drinks", canteen: "Demo Canteen", verify_method: "both" },
 ] as const;
 
 export type SeedItem = {
