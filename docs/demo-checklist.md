@@ -40,17 +40,36 @@ Open the app in Safari or Chrome. Don't open it inside a chat app's built-in bro
 - [ ] Beef hor fun claim: "Logged", "4.04 kg CO₂e · Red", 0 points.
 - [ ] The seller's "Your stall this week" panel (meals, low-carbon %, own containers, with last week's figures) goes up after a claim.
 
-## Claims: NFC sticker
+## Claims: NFC sticker (all three stalls)
 
-Write the stall link from Admin → Stalls and items onto a sticker. Set the stall to NFC or Both.
+All three stalls are set to **Both** (QR or NFC). Each stall needs **its own sticker**, because the link names the stall.
 
+- [ ] **Write three stickers.** Use an NFC writer app (for example NFC Tools) and write a URL record. The links are shown in Admin → Stalls and items for each stall:
+
+      | Stall | Sticker link |
+      |---|---|
+      | Economy Rice | `https://campus-carbon.stan322.workers.dev/tap?stall=econ-rice` |
+      | Noodles & Rice Plates | `https://campus-carbon.stan322.workers.dev/tap?stall=noodles` |
+      | Drinks | `https://campus-carbon.stan322.workers.dev/tap?stall=drinks` |
+
+- [ ] **Label each sticker** with its stall name, and put it at that stall's counter. A sticker at the wrong counter sends taps to the wrong seller.
+- [ ] **Test each sticker** with a phone before the demo: it should open `/tap` and name the right stall.
+
+**At each stall** (Economy Rice, Noodles & Rice Plates, Drinks):
+
+- [ ] The seller's screen shows the "QR code / NFC sticker" switch.
 - [ ] The seller chooses "NFC sticker" and taps an item: a "Tap" pulse and countdown appear.
-- [ ] iPhone (XS or later, unlocked, camera closed) taps the sticker → Safari opens `/tap` → "waiting for the seller".
-- [ ] The seller sees the name, with the countdown still running → Confirm → the student's screen shows the points.
+- [ ] iPhone (XS or later, unlocked, camera closed) taps that stall's sticker → Safari opens `/tap` → "waiting for the seller".
+- [ ] The seller sees the name, with the countdown still running → Confirm → the student's screen shows the points and band (for example "Green meal +20").
 - [ ] Android with NFC on: same flow.
+
+**Once, at any stall:**
+
 - [ ] Tapping the sticker twice, or reloading, keeps the same pending claim.
 - [ ] Wrong name on the seller's sheet → "Not them?" → the sheet goes back to waiting, and the other phone says "The seller cleared this tap".
-- [ ] Switching the stall to QR only while a tap is pending makes Confirm say the stall now uses QR codes.
+- [ ] Tapping a sticker at a stall whose seller hasn't tapped an item: the student sees "Ask the seller to tap what you bought first, then tap the sticker again." Another stall that is waiting isn't affected (stickers are per stall).
+- [ ] Switching the stall to QR only while a tap is pending makes Confirm say the stall now uses QR codes. Switch it back to Both afterwards.
+- [ ] **Drinks:** an NFC claim for a drink earns 0 points (drinks aren't banded); with "Own cup or container" on it earns +15.
 
 ## Logging (self-reported)
 
@@ -130,7 +149,7 @@ Write the stall link from Admin → Stalls and items onto a sticker. Set the sta
   - add a reward and check students see it
   - "Download redemptions (CSV)" works
 - [ ] **Admin → Points and limits:** the minimums are enforced (code lifetime 15 s or more, daily limit 1 or more).
-- [ ] **Admin → Stalls and items:** edit an item. The NFC sticker link is shown.
+- [ ] **Admin → Stalls and items:** edit an item. Each of the three stalls shows its NFC sticker link (they're all set to Both).
 - [ ] **Admin → Export activities (CSV):** opens in a spreadsheet, with `verified`, `source` and `confirm_latency_ms` (NFC rows) columns, plus `receipt_provider` and `refunded_at_sgt` for returns.
 - [ ] **A switched persona opening an `/admin/…` page** sees "Admins only", not a blank screen.
 
