@@ -9,13 +9,17 @@ Live demo: https://campus-carbon.stan322.workers.dev, plus the projector page at
 <table>
   <tr>
     <td align="center"><img src="docs/screenshots/today.png" width="220" alt="Today: weekly headline, budget, recap entry and the nudge"><br><sub>Today</sub></td>
+    <td align="center"><img src="docs/screenshots/seller-menu.png" width="220" alt="Seller menu with each dish's carbon band and kg"><br><sub>Seller menu, banded by kg CO₂e</sub></td>
+    <td align="center"><img src="docs/screenshots/claim-green.png" width="220" alt="Student's claim result: Green meal +20"><br><sub>Student's claim: Green meal +20</sub></td>
+  </tr>
+  <tr>
     <td align="center"><img src="docs/screenshots/seller-qr.png" width="220" alt="Seller sheet with a claim QR code"><br><sub>Seller shows a claim QR</sub></td>
     <td align="center"><img src="docs/screenshots/log-trip.png" width="220" alt="Logging a trip with walk, shuttle and car options"><br><sub>Log a trip</sub></td>
+    <td align="center"><img src="docs/screenshots/rewards.png" width="220" alt="Rewards with a live redemption code and QR"><br><sub>Rewards: live code</sub></td>
   </tr>
   <tr>
     <td align="center"><img src="docs/screenshots/missions.png" width="220" alt="Daily and weekly missions with badges"><br><sub>Missions and badges</sub></td>
     <td align="center"><img src="docs/screenshots/recap.png" width="220" alt="Shareable weekly recap card"><br><sub>Weekly recap card</sub></td>
-    <td align="center"><img src="docs/screenshots/rewards.png" width="220" alt="Rewards with a live redemption code and QR"><br><sub>Rewards: live code</sub></td>
   </tr>
 </table>
 
