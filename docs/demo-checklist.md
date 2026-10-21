@@ -19,7 +19,9 @@ Open the app in Safari or Chrome. Don't open it inside a chat app's built-in bro
 - [ ] **Morning of the demo, refresh the personas (Alex, Bea, Chen):** move their seeded history so it ends yesterday. Nothing is deleted, and real claims are untouched:
       `npm run seed:rebase`
 
-- [ ] **Limits:** rehearsal claims count toward them (5 per day, 1 per stall per 10 min). For the live run, use a fresh display name, or raise the daily limit for the day in Admin → Points and limits (`rate_daily_max`), or with:
+- [ ] **Per-stall gap (demo setting):** the gap between one student's claims at the same stall is set to **0 minutes** on the live site (since 22 Oct 2026), so you can claim back to back at one stall. Restore the normal 10 minutes after the demo in Admin → Points and limits (`rate_stall_window_min`), or with:
+      `npx wrangler d1 execute campus-carbon --remote --command "UPDATE settings SET value='10' WHERE key='rate_stall_window_min'"`
+- [ ] **Limits:** rehearsal claims count toward the daily limit (5 per day). For the live run, use a fresh display name, or raise the daily limit for the day in Admin → Points and limits (`rate_daily_max`), or with:
       `npx wrangler d1 execute campus-carbon --remote --command "UPDATE settings SET value='50' WHERE key='rate_daily_max'"`
 - [ ] **AI allowance:** each student gets 20 live AI calls a day (Points and limits → `ai_daily_max`). Raise it for heavy rehearsals.
 - [ ] **Reward stock:** check it in Admin → Rewards (Free kopi 20 a week, $1 off 30 a week). Top it up if rehearsals used some.
@@ -35,7 +37,7 @@ Open the app in Safari or Chrome. Don't open it inside a chat app's built-in bro
 - [ ] Android camera or Google Lens scans a new QR: the claim works.
 - [ ] Rescanning a used QR says "already used".
 - [ ] After 90 s the seller sees "This code expired"; "New code" works.
-- [ ] Same student, same stall, second claim within 10 minutes: rate-limit message.
+- [ ] Same student, same stall, second claim within 10 minutes: rate-limit message. (Skip while the demo setting is 0; check it after restoring 10.)
 - [ ] Chicken rice claim: "+10", "0.93 kg CO₂e · Amber", "Amber meal +10".
 - [ ] Beef hor fun claim: "Logged", "4.04 kg CO₂e · Red", 0 points.
 - [ ] The seller's "Your stall this week" panel (meals, low-carbon %, own containers, with last week's figures) goes up after a claim.

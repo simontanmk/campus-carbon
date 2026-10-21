@@ -53,7 +53,7 @@ stall.post("/stall/tokens", seller, async (c) => {
   const expires_at = now + settings.token_ttl_sec * 1000;
   if (method === "nfc") {
     // Only one pending NFC token per stall: a new one expires the previous (spec §8.2).
-    await db.prepare("UPDATE tokens SET expires_at = ? WHERE stall_id = ? AND method = 'nfc' AND used_at IS NULL AND expires_at > ?").bind(now, item.stall_id, now).run();
+    await db.prepare("UPDATE tokens SET expires_at = ? WHERE stall_id = ? AND method = 'nfc' AND used_at IS NULL AND expires_at > ?").bind(now - 1, item.stall_id, now).run();
   }
   await db
     .prepare("INSERT INTO tokens (id, stall_id, item_id, byo, method, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)")

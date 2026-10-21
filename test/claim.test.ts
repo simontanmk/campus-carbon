@@ -159,6 +159,15 @@ describe("POST /api/claim — rejections", () => {
     expect((ctx.raw.prepare("SELECT used_at FROM tokens WHERE id=?").get(t2.id) as any).used_at).toBeNull();
   });
 
+  it("a stall window of 0 minutes allows back-to-back claims at one stall (demo setting)", async () => {
+    const ctx = await setup();
+    ctx.raw.exec("INSERT INTO settings (key, value) VALUES ('rate_stall_window_min', '0') ON CONFLICT(key) DO UPDATE SET value = excluded.value");
+    const t1 = await makeToken(ctx, "u-seller-econ", "econ-veg-egg");
+    const t2 = await makeToken(ctx, "u-seller-econ", "econ-veg-tofu");
+    expect((await ctx.req("/api/claim", { as: "u-alex", body: { t: t1.token } })).status).toBe(200);
+    expect((await ctx.req("/api/claim", { as: "u-alex", body: { t: t2.token } })).status).toBe(200);
+  });
+
   it("same stall after 10 minutes is allowed", async () => {
     const ctx = await setup();
     ctx.raw.exec(
