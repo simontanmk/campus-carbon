@@ -33,7 +33,7 @@ Live demo: https://campus-carbon.stan322.workers.dev, plus the projector page at
   <sub>Admin insights</sub>
 </p>
 
-<sub>Screenshots use the seeded demo data (personas Alex, Bea and Chen).</sub>
+<sub>Phone screenshots use the seeded demo data (personas Alex, Bea and Chen). The impact page is the live site on 21 Oct 2026.</sub>
 
 ## What's in it
 
